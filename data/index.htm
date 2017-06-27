@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<!--
+To change this license header, choose License Headers in Project Properties.
+To change this template file, choose Tools | Templates
+and open the template in the editor.
+-->
+<html>
+    <head>
+        <title>ESP8266 Setup</title>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta content="text/html; charset=UTF-8" http-equiv="content-type">
+        <link rel="stylesheet" href="app.css">
+        <!-- Favicon -->
+        <link rel="icon" type="image/png" href="/favicon.png">
+    </head>
+    <body>
+        <div id="layout">
+            <a href="#menu" id="menuLink" class="menu-link">
+                <!-- Hamburger icon -->
+                <span></span>
+            </a>
+
+            <div id="menu">
+                <div id="mainmenu" class="pure-menu">
+                    <a class="pure-menu-heading" href="#">ESP8266</a>
+
+                    <ul class="pure-menu-list">
+                        <li id="m_page0" class="pure-menu-item menu-item-divided">
+                            <a href="#page0" class="pure-menu-link" onclick="load_page('page0');">Relais steuern</a>
+                        </li>
+                        <li id="m_page1" class="pure-menu-item">
+                            <a href="#page1" class="pure-menu-link" onclick="load_page('page1');">Timer</a>
+                        </li>
+                        <li id="m_page3" class="pure-menu-item pure-menu-disabled">
+                            <a href="#page3" class="pure-menu-link" onclick="load_page('page3');">Config</a>
+                        </li>
+                        <li id="m_page4" class="pure-menu-item">
+                            <a href="#page4" class="pure-menu-link" onclick="load_page('page4');">Log</a>
+                        </li>
+                        <li id="m_page5" class="pure-menu-item pure-menu-disabled">
+                            <a href="#page5" class="pure-menu-link" onclick="load_page('page5');">Dateisystem</a>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+            <div id="main">
+                <header class="header pure-g">
+                    <div class="pure-u-1-2">
+                        <h1>Wifi 4-fach Timer</h1>
+                        Aktuelle Zeit: <span id="aktuell"></span>, Berechtigung: <span id="userstatus"></span>
+                    </div>
+                    <div  class="pure-u-1-2">
+                        <span id="buttonsSmall">
+                            <button class="btn00">S 1</button> <button class="btn00">S 2</button> <button class="btn00">S 3</button> <button class="btn00">S 4</button>
+                        </span><br />
+                        <span id="buttonsLED">
+                            <button class="btn21">Led1</button> <button class="btn21">Led2</button> <button class="btn01">Led3</button> <button class="btn01">Led4</button>
+                        </span>
+                    </div>
+                </header>
+                <section id="content" class="content">
+                    <div id="page0" class="page  hide">
+                        <h2>WLAN Steckdosenleiste</h2>
+                        <table style="text-align: left; width: 100%; height: 45px;" border="0" cellpadding="0" cellspacing="0">
+
+                            <tbody>
+                                <tr>
+                                    <td style="vertical-align: center; text-align: center;"> 
+                                        <button id="button0" class="btn" onclick="Taster(0)">ON</button> 
+                                    </td>
+                                    <td style="vertical-align: center; text-align: center;">  
+                                        <button id="button1" class="btn" onclick="Taster(1)">ON</button> 
+                                    </td>
+                                    <td style="vertical-align: center; text-align: center;">   
+                                        <button id="button2" class="btn" onclick="Taster(2)">ON</button> 
+                                    </td>
+                                    <td style="vertical-align: center; text-align: center;">
+                                        <button id="button3" class="btn" onclick="Taster(3)">ON</button>     
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>  
+                    </div>
+                    <div id="page1" class="page hide">
+                        <h2>Timer Verwaltung</h2>
+                        <a href="/laden.html" class="pure-button">Timer aktualisieren</a>
+
+                        <table align="center" id="timertable"></table>
+                    </div>
+                    <div id="page3" class="page hide">
+                        <h2>Konfiguration des ESP8266</h2>
+                        <form method="post" action="setup.php"  class="pure-form pure-form-aligned">
+                            <fieldset>
+                                <legend>WLAN-Konfiguration</legend>
+                                <div class="pure-control-group">
+                                    <label for="ssid">WLAN Netzwerk Name</label> 
+                                    <input name="ssid" id="ssid" value="" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="pass">Passwort</label>
+                                    <input name="passwort" id="pass" value="" type="text"> 
+                                </div>
+                            </fieldset>
+                            <fieldset>
+                                <legend>HTTP-Authentifizierung</legend>
+                                <div class="pure-control-group">
+                                    <label for="AdminPasswort">Administratorpasswort</label>
+                                    <input name="AdminPasswort" id="AdminPasswort" value="" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="UserPasswort">Benutzerpasswort</label>
+                                    <input name="UserPasswort" id="UserPasswort" value="" type="text"> 
+                                </div>
+                            </fieldset>
+                            <fieldset>
+                                <legend>Voreinstellung der Relais</legend>
+                                <div class="pure-control-group">
+                                    <label for="setup4">Verhalten nach Stromausfall</label>
+                                    <input name="setup4" id="setup4" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                    <input name="setup5" id="setup5" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                    <input name="setup6" id="setup6" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                    <input name="setup7" id="setup7" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="setup8">Relais ein bei 0 oder 1</label>
+                                    <input name="setup8" id="setup8" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup9" id="setup9" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup10" id="setup10" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup11" id="setup11" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="setup12">Umschalter: LED leuchtet bei Strom</label>
+                                    <input name="setup12" id="setup12" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup13" id="setup13" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup14" id="setup14" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <input name="setup15" id="setup15" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                </div>
+                            </fieldset>
+                            <button name="submit" id="submit_id" value="Senden" type="submit" class="pure-button pure-button-primary">Senden</button>
+                        </form>
+                    </div>
+                    <div id="page4" class="page hide">
+                        <h2>Log-Datei</h2>
+                        <a href="/log.txt" class="pure-button"  download>Log herunterladen</a>
+                        <a href="/deletelog.php" class="pure-button">Log löschen</a><br/>
+                        <code id="logtable" class="white-space-pre"></code>
+                    </div>
+                    <div id="page5" class="page hide">
+                        <h2>Dateisystem</h2>
+                        <form method='POST' action='/upload' enctype='multipart/form-data' onsubmit="filesUpload();return false;">
+                            <input type='file' id='uploadfile'>
+                            <input type='submit' value='Upload'>
+                        </form>
+                        <table align="center" id="filetable"></table>
+                    </div>
+                    <div id="page6" class="page hide">
+                        <h2>keine Berechtigung</h2>
+                        <p>Für die aufgerufene Funktion haben Sie keine Berechtigung. Bitte loggen Sie sich als Administrator ein.</p>
+                    </div>
+                    <div id="page7" class="page hide">
+                        <h2>Seite nicht gefunden</h2>
+                        <p>Die aufgerufene Seite ist nicht vorhanden. Bitte wählen Sie aus dem Menü eine vorhandene Seite.</p>
+                    </div>
+                </section>
+                <footer id="footer" class="pure-g">
+                    <div class="pure-u-1-3" style="vertical-align: middle; width: 33%;">ChipID: <span id="ChipID"></span></div>
+                    <div class="pure-u-1-3" style="vertical-align: middle;">Firmware Version: <span id="version"></span></div>
+                    <div class="pure-u-1-3" style="vertical-align: middle; width: 33%;">&reg; Manfred Bielemeier Lizenz:GPL</div>
+                </footer>
+                <div id="notification"></div>
+            </div>
+        </div>
+        <script src="app.js"></script>
+    </body>
+</html>
