@@ -1,13 +1,16 @@
 # esp_schaltbare_Steckdose
 esp8266-basierte schaltbare WLAN-Steckdosensteuerung mit Timerfunktion
 
-![Schaltung mit wemos mini D1](../../fritzing/wemos.png)
+[Schaltung mit wemos mini D1](../../fritzing/wemos.png)
 
 ## Umgebung
 ### Software
 Arduino 1.8.2 mit zusätzlicher Boardverwalter-URL http://arduino.esp8266.com/stable/package_esp8266com_index.json .
+
+Die externe Library [time-master](https://github.com/PaulStoffregen/Time) von /libs nach arduino/libraries kopieren. Andere Anhängigkeiten bestehen nicht.
+
 ### Hardware
-nodemcu 0.9 bzw wemos mini D1, 4-fach Relaisplatine und 4-fach Taster
+nodemcu 0.9 bzw wemos mini D1, 4-fach Relaisplatine und 4-fach Taster.
 
 ## Funktion
 ### Start als AP
