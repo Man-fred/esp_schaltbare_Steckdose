@@ -156,7 +156,9 @@ function startPage3()
                 var j = JSON.parse(this.responseText);
                 document.getElementById("ssid").value = j.ssid1;
                 document.getElementById("pass").value = j.pass1;
+                document.getElementById("AdminName").value = j.name2;
                 document.getElementById("AdminPasswort").value = j.pass2;
+                document.getElementById("UserName").value = j.name3;
                 document.getElementById("UserPasswort").value = j.pass3;
                 document.getElementById("setup4").value = j.setup4;
                 document.getElementById("setup5").value = j.setup5;
@@ -375,7 +377,7 @@ function myCreateFunction(a) {
             "<select name=\"Art\" id=\"art" + a.id + "\" size=\"1\" style=\"text-align:center;\">" +
             "<option value=\"2\">Täglich</option><option value=\"1\">Einmalig</option><option value=\"4\">Montags</option><option value=\"5\">Dienstags</option>" +
             "<option value=\"6\">Mittwochs</option><option value=\"7\">Donnerstags</option><option value=\"8\">Freitags</option><option value=\"9\">Samstags</option>" +
-            "<option value=\"3\">Sonntags</option><option value=\"10\">Wochenende</option><option value=\"11\">Feiertage</option></select>";
+            "<option value=\"3\">Sonntags</option><option value=\"10\">Wochenende/Feiertag</option><option value=\"11\">Werktage</option><option value=\"12\">Feiertage</option></select>";
     document.getElementById("art" + a.id).selectedIndex = indexArt(a.art);
     row.insertCell(5).innerHTML = "<input  name=\"Datum\" id=\"dat" + a.id + "\" value=\"" + a.date + "\" type=\"text\" size=\"10\" maxlength=\"10\" style=\"text-align:center;\">";
     row.insertCell(6).innerHTML = "<input  name=\"Zeit\" id=\"zeit" + a.id + "\" value=\"" + a.time + "\" type=\"text\" size=\"8\" maxlength=\"8\" style=\"text-align:center;\">";

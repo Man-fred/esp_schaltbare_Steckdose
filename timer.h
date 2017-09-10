@@ -163,14 +163,17 @@ void TimerNaechster(int i, bool neustart = false)
     { //-------------------- Timerfunktion Täglich und sonstige wiederholte --------------------------------
       //letzter gerade ausgeführt, neue Zeit für morgen eintragen
       timer[i].naechster = (timer[i].zeit % 86400L) + Zeit;
-Serial.println("Nächster heute ("+String(weekday())+") "+PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
-      if  (timer[i].art == 2)      // Wenn Tägliche Timer
+      Serial.println("Nächster heute ("+String(weekday())+") "+PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
+      
+      // Tägliche Timer
+      if  (timer[i].art == 2)      
       { // täglicher Timer vorbei, morgen setzen
         if (timer[i].naechster < Jetzt)
           timer[i].naechster += 86400L;
-Serial.println("Nächster t ok "+PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
+        Serial.print("Nächster t ");
       }
-      if  (timer[i].art > 2 && timer[i].art < 10)  // Wochentage Timer
+      // einzelner Wochentag Timer
+      if  (timer[i].art > 2 && timer[i].art < 10)  
       { 
         if (timer[i].art - 2 - weekday() == 0) {
           if (timer[i].naechster < Jetzt)
@@ -180,30 +183,37 @@ Serial.println("Nächster t ok "+PrintDate(timer[i].naechster)+" "+PrintTime(tim
         } else {
           timer[i].naechster += (timer[i].art - 2 - weekday()) * 86400L;
         }
-Serial.println("Nächster w ok "+PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
+        Serial.print("Nächster w ");
       }
-      if  (timer[i].art == 10) { // Wochenende Timer
-        if (weekday() == 7) {
-          // Samstag
-          if (timer[i].naechster < Jetzt) {
-            timer[i].naechster += 86400L;
-          }
-        } else if (weekday() == 1) {
-          // Sonntag
-          if (timer[i].naechster < Jetzt) {
-            timer[i].naechster += 6 * 86400L;
-          }
-        } else {
-          timer[i].naechster += (7 - weekday()) * 86400L;
+      // Wochenende/Feiertag Timer
+      if  (timer[i].art == 10) { 
+        while (timer[i].naechster < Jetzt || 
+                 (weekday(timer[i].naechster) != 7 && 
+                  weekday(timer[i].naechster) != 1 &&
+                  !feiertag(timer[i].naechster))) {
+          timer[i].naechster += 86400L;
         }
-Serial.println("Nächster we ok "+PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
+        Serial.print("Nächster we ");
       }
-      if  (timer[i].art == 11) { // Feiertage Timer
-        if (!feiertag() || timer[i].naechster < Jetzt) {
+      // Werktag Timer
+      if  (timer[i].art == 11) { 
+        while (timer[i].naechster < Jetzt || 
+                  weekday(timer[i].naechster) == 7 || 
+                  weekday(timer[i].naechster) == 1 ||
+                  feiertag(timer[i].naechster)) {
+          timer[i].naechster += 86400L;
+        }
+        Serial.print("Nächster wt ");
+      }
+      if  (timer[i].art == 12) { // Feiertage Timer
+        while (timer[i].naechster < Jetzt || !feiertag(timer[i].naechster)) {
           // nächsten Feiertag suchen
-          timer[i].naechster += 20*86400L;
+          timer[i].naechster += 86400L;
+          ESP.wdtEnable(0);
         }
+        Serial.print("Nächster f ");
       }
+      Serial.println(PrintDate(timer[i].naechster)+" "+PrintTime(timer[i].naechster));
     } // ende Tageszeit Überinstimmung
   }   // ende Timer aktiv
 }

@@ -54,9 +54,10 @@ unsigned long TasterZeit[4];
 String Temp = "";
 boolean AP = 0; // Acsespoint Modus aus
 boolean WLAN_Fehlt = 1;
-unsigned long NTPTime = 0, ZeitTemp = 0;
-int timout = 0; //
-
+// Timer
+unsigned long NTPTime = 0, ZeitTemp = 0, zeitSW = 0;
+int timeout = 0; //
+boolean inSetup = true;
 
 #include "timer.h"
 
@@ -64,56 +65,55 @@ void Zeit_Einstellen()
 {
   if (!WLAN_Fehlt) {
     NTPTime = GetNTP();
-    timout = 0;
+    timeout = 0;
     while (NTPTime == 0 )
     {
-      timout++;
-      if  (timout > 10)  break;
+      if  (timeout++ > 10)  break;
       NTPTime = GetNTP();
     }
-    setTime(NTPTime);
-    Serial.print("NTP Time: ");
-    Serial.println(PrintTime(NTPTime));
-    if (!summertime( year(), month(), day(),  hour(), 0))  adjustTime(-60 * 60);
-    Serial.print("Zeit nach Sommer- Winterzeitanpassung: ");
-    Serial.println( PrintTime(now()) );
   }
+  Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
+  Serial.println( PrintTime(now()) );
 }
 
 void WlanStation()
 {
   if (WLAN_Fehlt) {
+    Serial.print("Verbinde mit ");
+    Serial.println(ssid);
+    WiFi.setPhyMode(WIFI_PHY_MODE_11G);
+    WiFi.setOutputPower(2.5);
+    WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, passwort);
-    timout = 0;
+    timeout = 0;
     Serial.print("Status ");
     Serial.println(WiFi.status());
-    while (WiFi.status() != WL_CONNECTED && !WiFi.localIP())
+    //while (WiFi.status() != WL_CONNECTED && !WiFi.localIP())
+    while (!WiFi.localIP())
     {
       delay(500);
       Serial.print("O");
-      timout++;
-      if  (timout > 10) // Wenn Anmeldung nicht möglich
+      if  (timeout++ > 10) // Wenn Anmeldung nicht möglich
       {
         Serial.println("");
         Serial.println("Wlan verbindung fehlt");
-        WLAN_Fehlt = 1;
         break;
       }
     }
     Serial.print("WL_Status ");
     Serial.println(WiFi.status());
     WiFi.printDiag(Serial);
-    //if (WiFi.status() == WL_CONNECTED)
-    {
-      WLAN_Fehlt = 0;
-      Serial.println("");
-      Serial.println("Mit Wlan verbunden");
-      Serial.print("IP Adresse: ");
-      Serial.println(WiFi.localIP());
-      Zeit_Einstellen();
-    }
   }
-  readInput();
+  //if (WiFi.status() == WL_CONNECTED)
+  if (WiFi.localIP())
+  {
+    WLAN_Fehlt = 0;
+    Serial.println("");
+    Serial.println("Mit Wlan verbunden");
+    Serial.print("IP Adresse: ");
+    Serial.println(WiFi.localIP());
+    Zeit_Einstellen();
+  }
 }
 
 void Relais_Init()
@@ -141,87 +141,27 @@ void Relais_Init()
   }
 }
 
-void readInput() {
-  char inser = Serial.read();
-  if (inser == 'e') {
-    Einstellen();
-  } else if (false && inser == 'f') {
-    Serial.println("Please wait 30 secs for SPIFFS to be formatted");
-    SPIFFS.format();
-    Serial.println("Spiffs formatted");
-    //See more at: http://www.esp8266.com/viewtopic.php?f=29&t=8194#sthash.mj02URAZ.dpuf
-    SPIFFS.info(fs_info);
-    Serial.println("totalBytes " + String(fs_info.totalBytes));
-  } else if (inser == 'i') {
-    Serial.println("");
-    Serial.println("Mit Wlan verbunden");
-    Serial.print("IP Adresse: ");
-    Serial.println(WiFi.localIP());
-    Serial.println("Zeit: " + PrintDate(now()) + " " + PrintTime(now()));
-  }
-}
-
-void setup()                // Wird 1 Mal beim Start ausgefuehrt
+void Einstellen()
 {
-  char inser;               // Serielle daten ablegen
-  String nachricht = "";    //  Setup Formular
-
-  EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
-  if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
-
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
-  while (Serial.available())
-    inser = Serial.read();
-  Serial.println("Start, Einstellen: e+<Enter>, Format SPIFFS: f+<Enter>");
-  delay(20000);
-
-  readInput();
-
-  Serial.println("Weiter");
-  Relais_Init();
-  z = 0;
-  LeseEeprom(ssid, sizeof(ssid));        // EEPROM lesen
-  if (ssid[0] == 255) // Wenn EEPROM leer ist dann:
-  {
-    for (i = 0; i < 6; i++) EEPROM.write(i, '\0');
-    EEPROM.commit();
-    Einstellen();
-  }
-
-  LeseEeprom(passwort, sizeof(passwort));
-  LeseEeprom(AdminPasswort, LOGINLAENGE);
-  LeseEeprom(AdminName, LOGINLAENGE);
-  LeseEeprom(UserPasswort, LOGINLAENGE);
-  LeseEeprom(UserName, LOGINLAENGE);
-
-  Serial.println("Freies RAM = " + String(system_get_free_heap_size()));
-
-  if (ssid[0] == '\0')  //Wenn ssid leer dann Access Point Modus starten
-  {
+  if (!AP) {
+    Serial.println("e: Einstellen");
+    z = 0;                        // EEPROM Start der Daten
+    getEeprom();
+  
     Serial.println("Starte in Access Point modus" );
     Serial.println("IP http://192.168.168.30");
-    Serial.print("SSID: WebSchalter, Passwort: ");
-    Serial.println(passwort);
+    Serial.print("SSID: WebSchalter, Passwort: tiramisu");
     WiFi.mode(WIFI_AP);      // access point modus
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-    strncpy(ssid, "WebSchalter\0", 13);
-    WiFi.softAP(&ssid[0], &passwort[0]);  // Name des Wi-Fi netzes
+    WiFi.softAP("WebSchalter", "tiramisu");  // Name des Wi-Fi netzes
 #if defined DNS
     dnsServer.start(DNS_PORT, "*", apIP);
 #endif
     AP = 1;
   }
-  else // Wenn ssid angegeben dann in Stationmodus mit Router verbinden
-  {
-    Serial.print("Verbinde mit ");
-    Serial.println(ssid);
-    WiFi.setPhyMode(WIFI_PHY_MODE_11G);
-    WiFi.setOutputPower(2.5);
-    WiFi.mode(WIFI_STA);
-    WlanStation();
-  } // ENDE Stationmodus / Access Point modus Auswahl
+}
 
+void printUser() {
   if (!AdminPasswort[0])
     Serial.println("Serverauthentifizierung ausgeschaltet");
   else
@@ -241,21 +181,81 @@ void setup()                // Wird 1 Mal beim Start ausgefuehrt
       Serial.println(UserPasswort);
     }
   }
-
-  Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   Server gestartet";
-  LogSchreiben(Temp);
-
-  httpStart();
-  // gespeicherte Timer laden und Reihenfolge setzen, hier mit Argument neustart=true
-  Timer_Laden(true);
+}
+void readInput() {
+  char inser = Serial.read();
+  if (inser == 'e' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[1]))) {
+    Einstellen();
+  } else if (false && inser == 'f' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[2]))) {
+    Serial.println("Please wait 30 secs for SPIFFS to be formatted");
+    SPIFFS.format();
+    Serial.println("Spiffs formatted");
+    //See more at: http://www.esp8266.com/viewtopic.php?f=29&t=8194#sthash.mj02URAZ.dpuf
+    SPIFFS.info(fs_info);
+    Serial.println("totalBytes " + String(fs_info.totalBytes));
+  } else if (inser == 'i' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[3]))) {
+    Serial.println("");
+    Serial.println("Mit Wlan verbunden");
+    Serial.print("IP Adresse: ");
+    Serial.println(WiFi.localIP());
+    Serial.println("Zeit: " + PrintDate(now()) + " " + PrintTime(now()));
+    printUser();
+  }
 }
 
-void Einstellen()
+// Wird 1 Mal beim Start ausgefuehrt
+void setup()                
 {
-  Serial.println("Einstellen");
-  EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
-  z = 0;                        // EEPROM Star den Datensatzes
+  char inser;               // Serielle daten ablegen
+  String nachricht = "";    //  Setup Formular
 
+  Serial.begin(115200);
+  Serial.setDebugOutput(true);
+  EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
+  if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
+  Relais_Init();
+
+  while (Serial.available())
+    inser = Serial.read();
+  Serial.println("Start mit Pause,");
+  Serial.println("Einstellen: e+<Enter>,");
+  Serial.println("Format SPIFFS: f+<Enter>,");
+  Serial.println("Info: i+<Enter>");
+}
+
+// nach 10 Sekunden 2. Teil von setup
+void setup2() {
+  Serial.println("Weiter");
+  if (!AP) {
+    z = 0;
+    LeseEeprom(ssid, sizeof(ssid));        // EEPROM lesen
+    if (ssid[0] == 255 || ssid[0] == '\0') // Wenn EEPROM leer oder SSID nicht gesetzt ist dann:
+    {
+      //for (i = 0; i < 6; i++) EEPROM.write(i, '\0');
+      //EEPROM.commit();
+      Einstellen();
+    }
+    else {
+      // Wenn ssid angegeben dann in Stationmodus mit Router verbinden
+      getEeprom();
+      WlanStation();
+  
+      Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   Server gestartet";
+      LogSchreiben(Temp);
+  
+      // gespeicherte Timer laden und Reihenfolge setzen, hier mit Argument neustart=true
+      Timer_Laden(true);
+    }
+  }
+  // ENDE Stationmodus / Access Point modus Auswahl
+  printUser();
+  httpStart();
+  Serial.println("Freies RAM = " + String(system_get_free_heap_size()));
+  inSetup = false;
+}
+
+void getEeprom() {
+  z = 0;
   LeseEeprom(ssid, sizeof(ssid));
   LeseEeprom(passwort, sizeof(passwort));
   LeseEeprom(AdminPasswort, LOGINLAENGE);
@@ -269,24 +269,7 @@ void Einstellen()
     Serial.println(url);
     Serial.println(nachricht);
   */
-  boolean endlos = 1;
-  WiFi.mode(WIFI_AP);      // access point modus
-  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
-  WiFi.softAP("Web Schalter Setup", "tiramisu");  // Name des Wi-Fi netzes
-#if defined DNS
-  dnsServer.start(DNS_PORT, "*", apIP);
-#endif
-  delay(500);         // Abwarten 0,5s
-  httpStart();
-  server.onNotFound ( handleNotFound );
-  while (endlos)
-  {
-#if defined DNS
-    dnsServer.processNextRequest();
-#endif
-    server.handleClient();
 
-  }
 }
 
 void httpStart() {
@@ -330,7 +313,7 @@ void httpStart() {
         notfound += server.uri();
         notfound += ( server.method() == HTTP_GET ) ? " GET " : " POST ";
         notfound += server.args();
-  
+
         for ( byte i = 0; i < server.args(); i++ ) {
           notfound += " " + server.argName ( i ) + ": " + server.arg ( i ) + "\r\n";
         }
@@ -349,7 +332,7 @@ byte newCookie(int level) {
   UserStatus[UserNext] = level;
   server.sendHeader("Set-Cookie", "ESPSESSIONID=" + String(UserCookie[UserNext]));
   UserCurrent = UserNext;
-  Serial.println("Login "+String(UserNext)+String(UserStatus[UserNext]));
+  Serial.println("Login " + String(UserNext) + String(UserStatus[UserNext]));
   return UserNext;
 }
 
@@ -452,7 +435,7 @@ void Ereignis_Zustand()
     Antwort += sketchVersion;
     Antwort += ";" + String(esp.getChipId()) + ";";
     Antwort += (UserStatus[nr] == COOKIE_ADMINISTRATOR ? "Administrator" : "Eingeschränkt");
-  
+
     server.sendHeader("Cache-Control", "no-cache");
     server.send(200, "text/plain", Antwort); // Antwort an Internet Browser senden
   }
@@ -491,12 +474,14 @@ void ConfigJson()      // Wird ausgeuehrt wenn "http://<ip address>/" aufgerufen
     if (ssid[0] == 255) ssid[0] = 0;            // Wenn speicher leer alles auf 0
     if (passwort[0] == 255) passwort[0] = 0;
     if (AdminPasswort[0] == 255) AdminPasswort[0] = 0;
-  
+
     String temp = "";              // Sternchen einfügen bei Passwortanzeige
-  
+
     temp += "{\"ssid1\":\"" + String(ssid) + "\",";
     temp +=  "\"pass1\":\"" + String(passwort) + "\",";
+    temp +=  "\"name2\":\"" + String(AdminName) + "\",";
     temp +=  "\"pass2\":\"" + String(AdminPasswort) + "\",";
+    temp +=  "\"name3\":\"" + String(UserName) + "\",";
     temp +=  "\"pass3\":\"" + String(UserPasswort) + "\"";
     for (int k = 4; k < 16; k++) {
       temp +=  ",\"setup" + String(k) + "\":" + String(val[k]);
@@ -517,7 +502,7 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
       DataFile.write(reinterpret_cast<uint8_t*>(&val[k]), sizeof(val[0]));
     }
     DataFile.close();
-  
+
     z = 0;
     server.arg("ssid").toCharArray(ssid, server.arg("ssid").length() + 1) ;
     SchreibeEeprom(ssid);
@@ -526,16 +511,18 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
       temp1.toCharArray(passwort, temp1.length() + 1) ;
       SchreibeEeprom (passwort);
     } else {
-      SchreibeEeprom (passwort);               // wenn mit * dann geladene pass abspeichern
+      SchreibeEeprom (passwort);               // wenn mit * dann geladenes passwort abspeichern
     }
+    server.arg("AdminName").toCharArray(AdminName, server.arg("AdminName").length() + 1) ;
     server.arg("AdminPasswort").toCharArray(AdminPasswort, server.arg("AdminPasswort").length() + 1) ;
     SchreibeEeprom (AdminPasswort);
     SchreibeEeprom(AdminName);
+    server.arg("UserName").toCharArray(UserName, server.arg("UserName").length() + 1) ;
     server.arg("UserPasswort").toCharArray(UserPasswort, server.arg("UserPasswort").length() + 1) ;
     SchreibeEeprom(UserPasswort);
     SchreibeEeprom(UserName);
     EEPROM.commit();
-  
+
     ConfigRoute();
   }
 }
@@ -543,43 +530,55 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
 void loop()
 {
 #if defined DNS
-  if (AP)dnsServer.processNextRequest();
+    if (AP) dnsServer.processNextRequest();
 #endif
-  for (int k = 0; k < 4; k++) {
-    // durch Pullup ist Standard 1, gedrückt 0
-    int TasterTemp = !digitalRead(Taster[k]);
-    // TasterTemp Standard 0, gedrückt 1
-    if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 500)
+  
+  if (inSetup) {
+    if (now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
     {
-      Serial.print(k);
-      TasterZeit[k] = millis();
-      TasterStatus[k] = TasterTemp;
-      if (TasterTemp)
-      {
-        val[k] = !val[k];         Relais_Schalten(k, val[k], "Taster");
+      ZeitTemp = now();
+      if (timeout++ > 10)
+        setup2();
+      Serial.print(".");
+    }
+  } else {
+    for (int k = 0; k < 4; k++) {
+      // durch Pullup ist Standard 1, gedrückt 0
+      int TasterTemp = !digitalRead(Taster[k]);
+      // TasterTemp Standard 0, gedrückt 1
+      if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 500) {
+        // Prellen abfangen
+        Serial.print(k);
+        TasterZeit[k] = millis();
+        TasterStatus[k] = TasterTemp;
+        if (TasterTemp)
+        {
+          val[k] = !val[k];         Relais_Schalten(k, val[k], "Taster");
+        }
       }
     }
-  }
-
-  if (now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
-  {
-    ZeitTemp = now();
-    Timer_pruefen(&ZeitTemp); // Timer auch wenn offline!!
-  }                            
-  /*if ( (NTPTime + 60) < ZeitTemp ) //WLan reconnect
-    {
-    if (WLAN_Fehlt) WlanStation();
-    }*/
-  if ( (NTPTime + 86400) < ZeitTemp ) //Zeit Update alle 24Stunden
-  {
-    //if (WiFi.status() == WL_CONNECTED) // Zeit neu einstellen
-    {
-      Zeit_Einstellen();
+    time_t jetzt = now();
+    /*if ( (NTPTime + 60) < ZeitTemp ) //WLan reconnect
+      {
+      if (WLAN_Fehlt) WlanStation();
+      }*/
+    if ( (NTPTime + 86400) < jetzt ) { //Zeit Update alle 24Stunden
+      WlanStation();
     }
-  }
+    if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
+      if (zeitSW + 3600 < jetzt) { // Ausführung 1 mal je Stunde
+        zeitSW = jetzt;
+        if (sommerzeitTest()) {
+          jetzt = now();
+        }
+      }
+      ZeitTemp = jetzt;
+      Timer_pruefen(&ZeitTemp); // Timer auch wenn offline!!
+    }
 
+    server.handleClient();              // Server Ereignisse abarbeiten
+  }
   readInput();
-  server.handleClient();              // Server Ereignisse abarbeiten
 }
 
 

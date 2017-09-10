@@ -1,6 +1,8 @@
 #include <Time.h>
 #include <WiFiUdp.h>
-#define TIMEZONE 2
+#define TIMEZONE 1
+#define SUMMERTIME 1
+
 IPAddress timeServerIP;
 const char* ntpServerName = "time.nist.gov";
 
@@ -9,6 +11,19 @@ byte packetBuffer[ NTP_PACKET_SIZE];
 WiFiUDP udp;
 
 int berechne_Ostern();
+
+boolean summertime(int year, byte month, byte day, byte hour, byte tzHours)
+// European Daylight Savings Time calculation by "jurs" for German Arduino Forum
+// input parameters: "normal time" for year, month, day, hour and tzHours (0=UTC, 1=MEZ)
+// return value: returns true during Daylight Saving Time, false otherwise
+{
+  if (month < 3 || month > 10) return false; // keine Sommerzeit in Jan, Feb, Nov, Dez
+  if (month > 3 && month < 10) return true; // Sommerzeit in Apr, Mai, Jun, Jul, Aug, Sep
+  if (month == 3 && (hour + 24 * day) >= (1 + tzHours + 24 * (31 - (5 * year / 4 + 4) % 7)) || month == 10 && (hour + 24 * day) < (1 + tzHours + 24 * (31 - (5 * year / 4 + 1) % 7)))
+    return true;
+  else
+    return false;
+}
 
 // send an NTP request to the time server at the given address
 unsigned long sendNTPpacket(IPAddress& address)
@@ -72,6 +87,13 @@ unsigned long GetNTP(void) {
   ntp_time = epoch + TIMEZONE * 3600;
   Serial.print("Unix local time = ");
   Serial.println(ntp_time);
+  if (SUMMERTIME && summertime(year(ntp_time), month(ntp_time), day(ntp_time),  hour(ntp_time), TIMEZONE)) {
+    ntp_time += 3600;
+    sommerzeit = true;
+  } else {
+    sommerzeit = false;
+  }
+  setTime(ntp_time);
 
   return ntp_time;
 }
@@ -136,27 +158,35 @@ String PrintDate (unsigned long epoch)
   return DateString;
 }
 
-boolean summertime(int year, byte month, byte day, byte hour, byte tzHours)
-// European Daylight Savings Time calculation by "jurs" for German Arduino Forum
-// input parameters: "normal time" for year, month, day, hour and tzHours (0=UTC, 1=MEZ)
-// return value: returns true during Daylight Saving Time, false otherwise
-{
-  if (month < 3 || month > 10) return false; // keine Sommerzeit in Jan, Feb, Nov, Dez
-  if (month > 3 && month < 10) return true; // Sommerzeit in Apr, Mai, Jun, Jul, Aug, Sep
-  if (month == 3 && (hour + 24 * day) >= (1 + tzHours + 24 * (31 - (5 * year / 4 + 4) % 7)) || month == 10 && (hour + 24 * day) < (1 + tzHours + 24 * (31 - (5 * year / 4 + 1) % 7)))
-    return true;
-  else
-    return false;
+boolean sommerzeitTest() {
+  if (SUMMERTIME) {
+    time_t jetzt = now();
+
+    if (summertime(year(jetzt), month(jetzt), day(jetzt),  hour(jetzt), TIMEZONE)) {
+      if (!sommerzeit) {
+        adjustTime(3600);
+        sommerzeit = true;
+        return true;
+      }
+    } else {
+      if (!sommerzeit) {
+        adjustTime(-3600);
+        sommerzeit = false;
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
-boolean feiertag()
+boolean feiertag(time_t test)
 {
   String testDate;
   int tag;
   int monat = 3;
   int ostersonntag;
 
-  testDate = String(day()) + "." + String(month());
+  testDate = String(day(test)) + "." + String(month(test));
 
   // Zuerst die festen Feiertage
   // Hinweis: 24.12 und 31.12 sind eigentlich keine Feiertage, werden aber hier als solche behandelt
@@ -185,7 +215,9 @@ boolean feiertag()
   // Nachfolgend einige Feiertage die nicht bundeseinheitlich sind: (ggf. auskommentieren)
   // if (testDate==("6.1")) {return true;}   // Heilige Drei Könige (nur in best. Bundesländern)
   // if (testDate==("15.8")) {return true;}  // Mariae Himmelfahrt (nur im Saarland)
-  // if (testDate==("31.10")) {return true;} // Reformationstag (nur in best. Bundesländern)
+  if (testDate == ("31.10")) {
+    return year() == 2017; // Reformationstag (nur in best. Bundesländern) und in 2017
+  }
   // if (testDate==("1.11")) {return true;}  // Allerheiligen (nur in best. Bundesländern)
 
 

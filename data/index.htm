@@ -46,11 +46,13 @@ and open the template in the editor.
             </div>
             <div id="main">
                 <header class="header pure-g">
-                    <div class="pure-u-1-2">
+                    <div class="pure-u-1-3">
                         <h1>Wifi 4-fach Timer</h1>
-                        Aktuelle Zeit: <span id="aktuell"></span>, Berechtigung: <span id="userstatus"></span>
                     </div>
-                    <div  class="pure-u-1-2">
+                    <div class="pure-u-1-3">
+                        Aktuelle&nbsp;Zeit:&nbsp;<span id="aktuell"></span><br />Berechtigung:&nbsp;<span id="userstatus"></span>
+                    </div>
+                    <div  class="pure-u-1-3 linksmitte">
                         <span id="buttonsSmall">
                             <button class="btn00">S 1</button> <button class="btn00">S 2</button> <button class="btn00">S 3</button> <button class="btn00">S 4</button>
                         </span><br />
@@ -105,8 +107,16 @@ and open the template in the editor.
                             <fieldset>
                                 <legend>HTTP-Authentifizierung</legend>
                                 <div class="pure-control-group">
+                                    <label for="AdminName">Administrator</label>
+                                    <input name="AdminName" id="AdminName" value="" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
                                     <label for="AdminPasswort">Administratorpasswort</label>
                                     <input name="AdminPasswort" id="AdminPasswort" value="" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label for="UserName">Benutzer</label>
+                                    <input name="UserName" id="UserName" value="" type="text"> 
                                 </div>
                                 <div class="pure-control-group">
                                     <label for="UserPasswort">Benutzerpasswort</label>
@@ -164,9 +174,9 @@ and open the template in the editor.
                     </div>
                 </section>
                 <footer id="footer" class="pure-g">
-                    <div class="pure-u-1-3" style="vertical-align: middle; width: 33%;">ChipID: <span id="ChipID"></span></div>
-                    <div class="pure-u-1-3" style="vertical-align: middle;">Firmware Version: <span id="version"></span></div>
-                    <div class="pure-u-1-3" style="vertical-align: middle; width: 33%;">&reg; Manfred Bielemeier Lizenz:GPL</div>
+                    <div class="pure-u-1-3 linksmitte">ChipID: <span id="ChipID"></span></div>
+                    <div class="pure-u-1-3 linksmitte">Firmware Version: <span id="version"></span></div>
+                    <div class="pure-u-1-3 linksmitte">&reg; Manfred Bielemeier Lizenz:GPL</div>
                 </footer>
                 <div id="notification"></div>
             </div>
