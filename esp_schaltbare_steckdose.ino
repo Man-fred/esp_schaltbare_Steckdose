@@ -262,6 +262,7 @@ void getEeprom() {
   LeseEeprom(AdminName, LOGINLAENGE);
   LeseEeprom(UserPasswort, LOGINLAENGE);
   LeseEeprom(UserName, LOGINLAENGE);
+  LeseEeprom(UpdateServer, LOGINLAENGE);
   //LeseEepromStr(&nachricht,100);
   /*
     Serial.println(ssid);
@@ -287,6 +288,8 @@ void httpStart() {
   server.on("/laden.html", Ereignis_Timer_Laden);   // Timer neu aus Speicher laden und sortieren
 
   server.on("/deletelog.php", Ereignis_DeleteLog);  // löscht ohne Rückfrage die Datei log.txt
+  
+  server.on("/update.php", updateVersion);          // Update OTA
 
   //list directory
   server.on("/list", HTTP_GET, handleFileList);
@@ -432,7 +435,7 @@ void Ereignis_Zustand()
     }
     Antwort += PrintDate(now()) + " " + PrintTime(now()) + ";";
     // Version + ChipId
-    Antwort += sketchVersion;
+    Antwort += mVersionNr + mVersionBoard;
     Antwort += ";" + String(esp.getChipId()) + ";";
     Antwort += (UserStatus[nr] == COOKIE_ADMINISTRATOR ? "Administrator" : "Eingeschränkt");
 
@@ -482,7 +485,8 @@ void ConfigJson()      // Wird ausgeuehrt wenn "http://<ip address>/" aufgerufen
     temp +=  "\"name2\":\"" + String(AdminName) + "\",";
     temp +=  "\"pass2\":\"" + String(AdminPasswort) + "\",";
     temp +=  "\"name3\":\"" + String(UserName) + "\",";
-    temp +=  "\"pass3\":\"" + String(UserPasswort) + "\"";
+    temp +=  "\"pass3\":\"" + String(UserPasswort) + "\",";
+    temp +=  "\"update\":\"" + String(UpdateServer) + "\"";
     for (int k = 4; k < 16; k++) {
       temp +=  ",\"setup" + String(k) + "\":" + String(val[k]);
     }
@@ -519,8 +523,10 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
     SchreibeEeprom(AdminName);
     server.arg("UserName").toCharArray(UserName, server.arg("UserName").length() + 1) ;
     server.arg("UserPasswort").toCharArray(UserPasswort, server.arg("UserPasswort").length() + 1) ;
+    server.arg("UpdateServer").toCharArray(UpdateServer, server.arg("UpdateServer").length() + 1) ;
     SchreibeEeprom(UserPasswort);
     SchreibeEeprom(UserName);
+    SchreibeEeprom(UpdateServer);
     EEPROM.commit();
 
     ConfigRoute();

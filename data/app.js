@@ -160,6 +160,7 @@ function startPage3()
                 document.getElementById("AdminPasswort").value = j.pass2;
                 document.getElementById("UserName").value = j.name3;
                 document.getElementById("UserPasswort").value = j.pass3;
+                document.getElementById("UpdateServer").value = j.update;
                 document.getElementById("setup4").value = j.setup4;
                 document.getElementById("setup5").value = j.setup5;
                 document.getElementById("setup6").value = j.setup6;

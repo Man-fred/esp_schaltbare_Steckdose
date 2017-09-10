@@ -99,12 +99,12 @@ void handleFileList() {
       server.send(500, "text/plain", "BAD ARGS");
       return;
     }
-  
+
     String path = server.arg("dir");
     DBG_OUTPUT_PORT.println("handleFileList: " + path);
     Dir dir = SPIFFS.openDir(path);
     path = String();
-  
+
     String output = "[";
     while (dir.next()) {
       File entry = dir.openFile("r");
@@ -119,7 +119,7 @@ void handleFileList() {
       output += "\"}";
       entry.close();
     }
-  
+
     output += "]";
     server.send(200, "text/json", output);
   }
@@ -141,3 +141,26 @@ void handleNotFound() {
 
   server.send ( 404, "text/plain", message );
 }
+
+void updateVersion() {
+  server.sendHeader("Location", "/index.htm");
+  server.send(303, "text/html", ""); // Antwort an Internet Browser
+  t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateServer, 80, "/esp8266/ota.php", (mVersionNr + mVersionBoard).c_str());
+
+  switch (ret) {
+    case HTTP_UPDATE_FAILED:
+      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " Update failed.");
+      break;
+    case HTTP_UPDATE_NO_UPDATES:
+      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " No update.");
+      break;
+    case HTTP_UPDATE_OK:
+      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " Update ok."); // may not called we reboot the ESP
+      break;
+    default:
+      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " unknown error");
+      break;
+  }
+}
+
+
