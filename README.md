@@ -1,7 +1,7 @@
 # esp_schaltbare_Steckdose
 esp8266-basierte schaltbare WLAN-Steckdosensteuerung mit Timerfunktion
 
-[Schaltung mit wemos mini D1](../../fritzing/wemos.png)
+![Schaltung mit wemos mini D1](fritzing/wemos.png)
 
 ## Umgebung
 ### Software
