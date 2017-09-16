@@ -64,7 +64,7 @@ unsigned long GetNTP(void) {
   while (cb  < NTP_PACKET_SIZE)
   {
     timout1++;
-    if  (timout1 > 50) return 0;                  // 25s Timout
+    if  (timout1 > 10) return 0;                  // 5s Timout
     cb = udp.parsePacket();
     delay(500);
   }

@@ -24,7 +24,8 @@ extern "C" {
 FSInfo fs_info;
 /// #define DNS
 byte Taster[4] = {D2, D1, D4, D3}; //2,0,4,5
-byte Relay[4] = {D5, D6, D7, D8}; //13,12,14,16
+byte Relay[4] = {D5, D6, D7, D0}; //13,12,14,16 (D8 testweise D0)
+byte statusLED = D8; // muss beim Booten unbedingt LOW sein!
 
 IPAddress apIP(192, 168, 168, 30); // wenn in AP-Mode
 
@@ -51,12 +52,23 @@ byte val[16] = {0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1};
 // Zustand der Taster
 byte TasterStatus[4];
 unsigned long TasterZeit[4];
+byte TasterAktion[4][4];
 String Temp = "";
-boolean AP = 0; // Acsespoint Modus aus
-boolean WLAN_Fehlt = 1;
 // Timer
 unsigned long NTPTime = 0, ZeitTemp = 0, zeitSW = 0;
 int timeout = 0; //
+byte statusLEDsek = 0;
+
+/*  Status-Flags:
+ *  normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+ *  in Setup           
+ *  AP                 schnelles Blinken 1 / 1 sek
+ *  WLAN_Fehlt         länger an als aus 5 / 1 sek
+ *  NTP == 0           länger aus als an 1 / 5 sek
+ */
+ 
+boolean AP = 0; // Acsespoint Modus aus
+boolean WLAN_Fehlt = 1;
 boolean inSetup = true;
 
 #include "timer.h"
@@ -65,12 +77,6 @@ void Zeit_Einstellen()
 {
   if (!WLAN_Fehlt) {
     NTPTime = GetNTP();
-    timeout = 0;
-    while (NTPTime == 0 )
-    {
-      if  (timeout++ > 10)  break;
-      NTPTime = GetNTP();
-    }
   }
   Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
   Serial.println( PrintTime(now()) );
@@ -118,7 +124,7 @@ void WlanStation()
 
 void Relais_Init()
 {
-  if (SPIFFS.exists("/relais.dat")) // Timern aus Datei laden
+  if (SPIFFS.exists("/relais.dat")) // Relaiszustand aus Datei laden
   {
     File DataFile = SPIFFS.open("/relais.dat", "r");
     DataFile.read(reinterpret_cast<uint8_t*>(&val), sizeof(val));
@@ -206,6 +212,11 @@ void readInput() {
 // Wird 1 Mal beim Start ausgefuehrt
 void setup()                
 {
+  for (int k = 0; k < 4; k++) {
+    pinMode(Relay[k], OUTPUT);
+    digitalWrite(Relay[k], 0);
+    pinMode(Taster[k], INPUT_PULLUP);
+  }
   char inser;               // Serielle daten ablegen
   String nachricht = "";    //  Setup Formular
 
@@ -213,7 +224,6 @@ void setup()
   Serial.setDebugOutput(true);
   EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
   if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
-  Relais_Init();
 
   while (Serial.available())
     inser = Serial.read();
@@ -226,6 +236,7 @@ void setup()
 // nach 10 Sekunden 2. Teil von setup
 void setup2() {
   Serial.println("Weiter");
+  Relais_Init();
   if (!AP) {
     z = 0;
     LeseEeprom(ssid, sizeof(ssid));        // EEPROM lesen
@@ -572,6 +583,10 @@ void loop()
       WlanStation();
     }
     if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
+      if (NTPTime == 0) {
+        WlanStation();
+        jetzt = NTPTime;
+      }
       if (zeitSW + 3600 < jetzt) { // Ausführung 1 mal je Stunde
         zeitSW = jetzt;
         if (sommerzeitTest()) {
@@ -579,6 +594,41 @@ void loop()
         }
       }
       ZeitTemp = jetzt;
+ //  in Setup           
+      if (AP) {
+        //  AP                 schnelles Blinken 1 / 1 sek
+        if (statusLEDsek++ > 1) {
+          digitalWrite(statusLED, 1);
+          statusLEDsek = 0;
+        } else {
+          digitalWrite(statusLED, 0);
+        }
+      } else if (WLAN_Fehlt) {
+        //  WLAN_Fehlt         länger an als aus 5 / 1 sek
+        if (statusLEDsek++ > 1) {
+          digitalWrite(statusLED, 1);
+          if (statusLEDsek > 5) statusLEDsek = 0;
+        } else {
+          digitalWrite(statusLED, 0);
+        }
+      } else if ((NTPTime + 86400) < jetzt) {
+        //  NTP ungültig       länger aus als an 1 / 5 sek
+        if (statusLEDsek++ > 5) {
+          digitalWrite(statusLED, 1);
+          statusLEDsek = 0;
+        } else {
+          digitalWrite(statusLED, 0);
+        }
+      } else {
+        //  normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+        if (statusLEDsek++ > 5) {
+          digitalWrite(statusLED, 1);
+          if (statusLEDsek > 10) statusLEDsek = 0;
+        } else {
+          digitalWrite(statusLED, 0);
+        }
+      }
+
       Timer_pruefen(&ZeitTemp); // Timer auch wenn offline!!
     }
 

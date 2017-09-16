@@ -4,7 +4,7 @@
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 
-String mVersionNr = "E00-03-03.ino.";
+String mVersionNr = "E00-03-05.ino.";
 #ifdef ARDUINO_ESP8266_NODEMCU
   const byte board = 1;
   String mVersionBoard = "nodemcu";
@@ -35,6 +35,7 @@ char AdminPasswort[LOGINLAENGE] = "\0";
 char UserName[LOGINLAENGE] = "user\0";
 char UserPasswort[LOGINLAENGE] = "\0";
 char UpdateServer[LOGINLAENGE] = "192.168.178.60\0";
+char ZeitServer[LOGINLAENGE] = "192.168.178.1\0";
 int  UserCookie[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserStatus[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserNext=0;
