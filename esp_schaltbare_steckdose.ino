@@ -6,7 +6,9 @@
 #include "fs.h";
 #include "log.h"
 #include "ntp.h"
-#include <TimeLib.h>
+#include <DS3232RTC.h>    //http://github.com/JChristensen/DS3232RTC
+#include <Wire.h>         //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
+#include <TimeLib.h>      //<Time.h> http://www.arduino.cc/playground/Code/Time
 
 extern "C" {
 #include "user_interface.h"
@@ -22,18 +24,15 @@ extern "C" {
   };
 */
 FSInfo fs_info;
-/// #define DNS
 byte Taster[4] = {D2, D1, D4, D3}; //2,0,4,5
 byte Relay[4] = {D5, D6, D7, D0}; //13,12,14,16 (D8 testweise D0)
 byte statusLED = D8; // muss beim Booten unbedingt LOW sein!
 
 IPAddress apIP(192, 168, 168, 30); // wenn in AP-Mode
 
-#if defined DNS
 #include <DNSServer.h>
 const byte DNS_PORT = 53;
 DNSServer dnsServer;
-#endif
 
 char ssid[32] = "\0";
 char passwort[64] = "\0";
@@ -55,18 +54,20 @@ unsigned long TasterZeit[4];
 byte TasterAktion[4][4];
 String Temp = "";
 // Timer
-unsigned long NTPTime = 0, ZeitTemp = 0, zeitSW = 0;
+unsigned long NTPTime = 0, RTCTime = 0, RTCSync = 0, RTCfehlt = 0, ZeitTemp = 0, ZeitTempStd = 0, ZeitTempTag = 0;
+// nach 5 Versuchen für 24 Std aufgeben
+byte NTPfehlt = 0;
 int timeout = 0; //
 byte statusLEDsek = 0;
 
 /*  Status-Flags:
- *  normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
- *  in Setup           
- *  AP                 schnelles Blinken 1 / 1 sek
- *  WLAN_Fehlt         länger an als aus 5 / 1 sek
- *  NTP == 0           länger aus als an 1 / 5 sek
- */
- 
+    normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+    in Setup
+    AP                 schnelles Blinken 1 / 1 sek
+    WLAN_Fehlt         länger an als aus 5 / 1 sek
+    NTP == 0           länger aus als an 1 / 5 sek
+*/
+
 boolean AP = 0; // Acsespoint Modus aus
 boolean WLAN_Fehlt = 1;
 boolean inSetup = true;
@@ -77,48 +78,64 @@ void Zeit_Einstellen()
 {
   if (!WLAN_Fehlt) {
     NTPTime = GetNTP();
+  } else {
+    NTPTime = 0;
   }
+
+  if (NTPTime != 0) {
+    if (!RTCfehlt && abs(RTCTime - NTPTime) > 1) {
+      RTCSync = NTPTime;
+      RTC.set(NTPTime);
+    }
+    setTime(NTPTime);
+  }
+
   Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
   Serial.println( PrintTime(now()) );
 }
 
 void WlanStation()
 {
-  if (WLAN_Fehlt) {
-    Serial.print("Verbinde mit ");
-    Serial.println(ssid);
-    WiFi.setPhyMode(WIFI_PHY_MODE_11G);
-    WiFi.setOutputPower(2.5);
-    WiFi.mode(WIFI_STA);
-    WiFi.begin(ssid, passwort);
-    timeout = 0;
-    Serial.print("Status ");
-    Serial.println(WiFi.status());
-    //while (WiFi.status() != WL_CONNECTED && !WiFi.localIP())
-    while (!WiFi.localIP())
-    {
-      delay(500);
-      Serial.print("O");
-      if  (timeout++ > 10) // Wenn Anmeldung nicht möglich
+  if (AP) {
+    WLAN_Fehlt = true;
+  } else {
+    if (WLAN_Fehlt) {
+      Serial.print("Verbinde mit ");
+      Serial.println(ssid);
+      WiFi.setPhyMode(WIFI_PHY_MODE_11G);
+      WiFi.setOutputPower(2.5);
+      WiFi.mode(WIFI_STA);
+      WiFi.begin(ssid, passwort);
+      timeout = 0;
+      Serial.print("Status ");
+      Serial.println(WiFi.status());
+      //while (WiFi.status() != WL_CONNECTED && !WiFi.localIP())
+      while (!WiFi.localIP())
       {
-        Serial.println("");
-        Serial.println("Wlan verbindung fehlt");
-        break;
+        delay(500);
+        Serial.print("O");
+        if  (timeout++ > 10) // Wenn Anmeldung nicht möglich
+        {
+          Serial.println("");
+          Serial.println("Wlan verbindung fehlt");
+          break;
+        }
       }
+      Serial.print("WL_Status ");
+      Serial.println(WiFi.status());
+      WiFi.printDiag(Serial);
     }
-    Serial.print("WL_Status ");
-    Serial.println(WiFi.status());
-    WiFi.printDiag(Serial);
-  }
-  //if (WiFi.status() == WL_CONNECTED)
-  if (WiFi.localIP())
-  {
-    WLAN_Fehlt = 0;
-    Serial.println("");
-    Serial.println("Mit Wlan verbunden");
-    Serial.print("IP Adresse: ");
-    Serial.println(WiFi.localIP());
-    Zeit_Einstellen();
+    //if (WiFi.status() == WL_CONNECTED)
+    if (WiFi.localIP())
+    {
+      WLAN_Fehlt = 0;
+      Serial.println("");
+      Serial.println("Mit Wlan verbunden");
+      Serial.print("IP Adresse: ");
+      Serial.println(WiFi.localIP());
+    } else {
+      WLAN_Fehlt = 1;
+    }
   }
 }
 
@@ -153,16 +170,14 @@ void Einstellen()
     Serial.println("e: Einstellen");
     z = 0;                        // EEPROM Start der Daten
     getEeprom();
-  
+
     Serial.println("Starte in Access Point modus" );
     Serial.println("IP http://192.168.168.30");
     Serial.print("SSID: WebSchalter, Passwort: tiramisu");
     WiFi.mode(WIFI_AP);      // access point modus
     WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
     WiFi.softAP("WebSchalter", "tiramisu");  // Name des Wi-Fi netzes
-#if defined DNS
     dnsServer.start(DNS_PORT, "*", apIP);
-#endif
     AP = 1;
   }
 }
@@ -210,7 +225,7 @@ void readInput() {
 }
 
 // Wird 1 Mal beim Start ausgefuehrt
-void setup()                
+void setup()
 {
   for (int k = 0; k < 4; k++) {
     pinMode(Relay[k], OUTPUT);
@@ -237,6 +252,17 @@ void setup()
 void setup2() {
   Serial.println("Weiter");
   Relais_Init();
+
+  // IIC (I2C) einbinden
+  //Wire.begin(); //Kommunikation über die Wire.h bibliothek beginnen.
+  setSyncProvider(RTC.get);   // the function to get the time from the RTC
+  RTCfehlt = (timeStatus() != timeSet);
+  if (RTCfehlt) {
+    Serial.println("Unable to sync with the RTC");
+  } else {
+    Serial.println("RTC has set the system time");
+  }
+  
   if (!AP) {
     z = 0;
     LeseEeprom(ssid, sizeof(ssid));        // EEPROM lesen
@@ -250,14 +276,18 @@ void setup2() {
       // Wenn ssid angegeben dann in Stationmodus mit Router verbinden
       getEeprom();
       WlanStation();
-  
+      Zeit_Einstellen();
+
       Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   Server gestartet";
       LogSchreiben(Temp);
-  
+
       // gespeicherte Timer laden und Reihenfolge setzen, hier mit Argument neustart=true
       Timer_Laden(true);
     }
+  } else {
+    Zeit_Einstellen();
   }
+
   // ENDE Stationmodus / Access Point modus Auswahl
   printUser();
   httpStart();
@@ -299,7 +329,7 @@ void httpStart() {
   server.on("/laden.html", Ereignis_Timer_Laden);   // Timer neu aus Speicher laden und sortieren
 
   server.on("/deletelog.php", Ereignis_DeleteLog);  // löscht ohne Rückfrage die Datei log.txt
-  
+
   server.on("/update.php", updateVersion);          // Update OTA
 
   //list directory
@@ -544,17 +574,22 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
   }
 }
 
+void statusLedBlink(byte an, byte aus) {
+  if (statusLEDsek++ > an) {
+    digitalWrite(statusLED, LED_ON);
+    if (statusLEDsek > aus) statusLEDsek = 0;
+  } else {
+    digitalWrite(statusLED, LED_OFF);
+  }
+}
+
 void loop()
 {
-#if defined DNS
-    if (AP) dnsServer.processNextRequest();
-#endif
-  
   if (inSetup) {
     if (now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
     {
       ZeitTemp = now();
-      if (timeout++ > 10)
+      if (timeout++ > 2)
         setup2();
       Serial.print(".");
     }
@@ -563,38 +598,42 @@ void loop()
       // durch Pullup ist Standard 1, gedrückt 0
       int TasterTemp = !digitalRead(Taster[k]);
       // TasterTemp Standard 0, gedrückt 1
-      if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 500) {
+      if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 250) {
         // Prellen abfangen
         Serial.print(k);
         TasterZeit[k] = millis();
         TasterStatus[k] = TasterTemp;
         if (TasterTemp)
         {
-          val[k] = !val[k];         Relais_Schalten(k, val[k], "Taster");
+          val[k] = !val[k];
+          Relais_Schalten(k, val[k], "Taster");
         }
       }
     }
     time_t jetzt = now();
-    /*if ( (NTPTime + 60) < ZeitTemp ) //WLan reconnect
-      {
-      if (WLAN_Fehlt) WlanStation();
-      }*/
-    if ( (NTPTime + 86400) < jetzt ) { //Zeit Update alle 24Stunden
-      WlanStation();
-    }
+
     if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
-      if (NTPTime == 0) {
+      if ( (NTPTime + 86400) < jetzt || (NTPTime == 0 && NTPfehlt++ < 6)) { //Zeit Update alle 24Stunden
         WlanStation();
-        jetzt = NTPTime;
+        Zeit_Einstellen();
+        jetzt = now();
       }
-      if (zeitSW + 3600 < jetzt) { // Ausführung 1 mal je Stunde
-        zeitSW = jetzt;
+      if (ZeitTempStd + 3600 < jetzt) { // Ausführung 1 mal je Stunde
         if (sommerzeitTest()) {
+          Zeit_Einstellen();
           jetzt = now();
         }
+        ZeitTempStd = jetzt;
+      }
+      if (ZeitTempTag + 86400 < jetzt) { // Ausführung 1 mal je Tag
+        if (sommerzeitTest()) {
+          Zeit_Einstellen();
+          jetzt = now();
+        }
+        ZeitTempTag = jetzt;
       }
       ZeitTemp = jetzt;
- //  in Setup           
+      //  in Setup
       if (AP) {
         //  AP                 schnelles Blinken 1 / 1 sek
         if (statusLEDsek++ > 1) {
@@ -620,18 +659,16 @@ void loop()
           digitalWrite(statusLED, 0);
         }
       } else {
-        //  normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
-        if (statusLEDsek++ > 5) {
-          digitalWrite(statusLED, 1);
-          if (statusLEDsek > 10) statusLEDsek = 0;
-        } else {
-          digitalWrite(statusLED, 0);
-        }
+        //  normale Funktion "Station":  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+        statusLedBlink(5, 10);
       }
-
-      Timer_pruefen(&ZeitTemp); // Timer auch wenn offline!!
+      // Timer auch wenn offline, aber nur wenn gueltige Zeit
+      if (NTPTime || !RTCfehlt) {
+        Timer_pruefen(&ZeitTemp); 
+      }
     }
 
+    if (AP) dnsServer.processNextRequest();
     server.handleClient();              // Server Ereignisse abarbeiten
   }
   readInput();

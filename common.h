@@ -4,6 +4,9 @@
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 
+#define LED_ON LOW
+#define LED_OFF HIGH
+
 String mVersionNr = "E00-03-05.ino.";
 #ifdef ARDUINO_ESP8266_NODEMCU
   const byte board = 1;
@@ -40,6 +43,7 @@ int  UserCookie[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserStatus[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserNext=0;
 int  UserCurrent = -1;
+
 boolean sommerzeit = false;
 const char* serverIndex = "<form method='POST' action='/upload' enctype='multipart/form-data'><input type='file' name='upload'><input type='submit' value='Upload'></form>";
 

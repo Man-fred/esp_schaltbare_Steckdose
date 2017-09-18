@@ -1,3 +1,4 @@
+#include "common.h";
 #include <Time.h>
 #include <WiFiUdp.h>
 #define TIMEZONE 1
@@ -93,8 +94,6 @@ unsigned long GetNTP(void) {
   } else {
     sommerzeit = false;
   }
-  setTime(ntp_time);
-
   return ntp_time;
 }
 
@@ -161,20 +160,7 @@ String PrintDate (unsigned long epoch)
 boolean sommerzeitTest() {
   if (SUMMERTIME) {
     time_t jetzt = now();
-
-    if (summertime(year(jetzt), month(jetzt), day(jetzt),  hour(jetzt), TIMEZONE)) {
-      if (!sommerzeit) {
-        adjustTime(3600);
-        sommerzeit = true;
-        return true;
-      }
-    } else {
-      if (!sommerzeit) {
-        adjustTime(-3600);
-        sommerzeit = false;
-        return true;
-      }
-    }
+    return (summertime(year(jetzt), month(jetzt), day(jetzt),  hour(jetzt), TIMEZONE) ? !sommerzeit : sommerzeit);
   }
   return false;
 }
