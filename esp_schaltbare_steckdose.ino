@@ -10,6 +10,21 @@
 #include <Wire.h>         //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
 #include <TimeLib.h>      //<Time.h> http://www.arduino.cc/playground/Code/Time
 
+#include "Adafruit_MCP23017.h"
+
+// Basic pin reading and pullup test for the MCP23017 I/O expander
+
+// Connect pin #12 of the expander to Analog 5 (i2c clock)
+// Connect pin #13 of the expander to Analog 4 (i2c data)
+// Connect pins #15, 16 and 17 of the expander to ground (address selection)
+// Connect pin #9 of the expander to 5V (power)
+// Connect pin #10 of the expander to ground (common ground)
+// Connect pin #18 through a ~10kohm resistor to 5V (reset pin, active low)
+
+// Input #0 is on pin 21 so connect a button or switch from there to ground
+
+Adafruit_MCP23017 mcp;
+
 extern "C" {
 #include "user_interface.h"
 }
@@ -155,8 +170,6 @@ void Relais_Init()
   }
   // Initialisierung nach Start
   for (int k = 0; k < 4; k++) {
-    pinMode(Relay[k], OUTPUT);
-    pinMode(Taster[k], INPUT_PULLUP);
     if (val[k + 4] < 2) {
       val[k] = val[k + 4];
     }
@@ -227,10 +240,16 @@ void readInput() {
 // Wird 1 Mal beim Start ausgefuehrt
 void setup()
 {
+  mcp.begin();      // use default address 0
+
   for (int k = 0; k < 4; k++) {
-    pinMode(Relay[k], OUTPUT);
-    digitalWrite(Relay[k], 0);
-    pinMode(Taster[k], INPUT_PULLUP);
+    //pinMode(Relay[k], OUTPUT);
+    //digitalWrite(Relay[k], 0);
+    //pinMode(Taster[k], INPUT_PULLUP);
+    mcp.pinMode(Taster[k], INPUT);
+    mcp.pullUp(Taster[k], HIGH);  // turn on a 100K pullup internally
+    mcp.pinMode(Relay[k], OUTPUT);
+    mcp.digitalWrite(Relay[k], 0);
   }
   char inser;               // Serielle daten ablegen
   String nachricht = "";    //  Setup Formular
@@ -445,8 +464,8 @@ void Relais_Schalten(int datensatz, byte ein, String logtext)
   }
   Temp += "     ";
   Temp += logtext;
-  digitalWrite(Relay[datensatz], val[datensatz + 8] ^ !val[datensatz + 12] ^ val[datensatz]);
-  Serial.print(Temp);
+  mcp.digitalWrite(Relay[datensatz], val[datensatz + 8] ^ !val[datensatz + 12] ^ val[datensatz]);
+  Serial.println(Temp);
   LogSchreiben(Temp);
 
   File DataFile = SPIFFS.open("/relais.dat", "r+");
@@ -576,10 +595,10 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
 
 void statusLedBlink(byte an, byte aus) {
   if (statusLEDsek++ > an) {
-    digitalWrite(statusLED, LED_ON);
+    mcp.digitalWrite(statusLED, LED_ON);
     if (statusLEDsek > aus) statusLEDsek = 0;
   } else {
-    digitalWrite(statusLED, LED_OFF);
+    mcp.digitalWrite(statusLED, LED_OFF);
   }
 }
 
@@ -596,7 +615,7 @@ void loop()
   } else {
     for (int k = 0; k < 4; k++) {
       // durch Pullup ist Standard 1, gedrückt 0
-      int TasterTemp = !digitalRead(Taster[k]);
+      int TasterTemp = !mcp.digitalRead(Taster[k]);
       // TasterTemp Standard 0, gedrückt 1
       if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 250) {
         // Prellen abfangen
@@ -637,26 +656,26 @@ void loop()
       if (AP) {
         //  AP                 schnelles Blinken 1 / 1 sek
         if (statusLEDsek++ > 1) {
-          digitalWrite(statusLED, 1);
+          mcp.digitalWrite(statusLED, 1);
           statusLEDsek = 0;
         } else {
-          digitalWrite(statusLED, 0);
+          mcp.digitalWrite(statusLED, 0);
         }
       } else if (WLAN_Fehlt) {
         //  WLAN_Fehlt         länger an als aus 5 / 1 sek
         if (statusLEDsek++ > 1) {
-          digitalWrite(statusLED, 1);
+          mcp.digitalWrite(statusLED, 1);
           if (statusLEDsek > 5) statusLEDsek = 0;
         } else {
-          digitalWrite(statusLED, 0);
+          mcp.digitalWrite(statusLED, 0);
         }
       } else if ((NTPTime + 86400) < jetzt) {
         //  NTP ungültig       länger aus als an 1 / 5 sek
         if (statusLEDsek++ > 5) {
-          digitalWrite(statusLED, 1);
+          mcp.digitalWrite(statusLED, 1);
           statusLEDsek = 0;
         } else {
-          digitalWrite(statusLED, 0);
+          mcp.digitalWrite(statusLED, 0);
         }
       } else {
         //  normale Funktion "Station":  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
