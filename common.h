@@ -47,4 +47,11 @@ int  UserCurrent = -1;
 boolean sommerzeit = false;
 const char* serverIndex = "<form method='POST' action='/upload' enctype='multipart/form-data'><input type='file' name='upload'><input type='submit' value='Upload'></form>";
 
+// Timer
+unsigned long NTPTime = 0, RTCTime = 0, RTCSync = 0, ZeitTemp = 0, ZeitTempMin = 0, ZeitTempStd = 0, ZeitTempTag = 0;
+// Status
+byte NTPok = 0, WLANok = 0, IOok = 0, RTCok = 0, DISPLAYok = 0;
+boolean AP = 0; // Accesspoint Modus aus
+
+
 #endif

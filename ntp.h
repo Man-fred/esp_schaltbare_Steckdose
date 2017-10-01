@@ -94,6 +94,7 @@ unsigned long GetNTP(void) {
   } else {
     sommerzeit = false;
   }
+  NTPok = true;
   return ntp_time;
 }
 

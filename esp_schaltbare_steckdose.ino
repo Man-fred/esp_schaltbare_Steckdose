@@ -6,24 +6,45 @@
 #include "fs.h";
 #include "log.h"
 #include "ntp.h"
-#include <DS3232RTC.h>    //http://github.com/JChristensen/DS3232RTC
-#include <Wire.h>         //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
-#include <TimeLib.h>      //<Time.h> http://www.arduino.cc/playground/Code/Time
+#include <TimeLib.h>             //<Time.h> http://www.arduino.cc/playground/Code/Time
 
-#include "Adafruit_MCP23017.h"
+#define IICTEST
+#ifdef IICTEST
+# include <Wire.h>               //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
+# define PIN_SDA D5
+# define PIN_SCK D6
+# define IO_I2C_ADDRESS 0x20     
+# define RTC_I2C_ADDRESS 0x68
+# include "Adafruit_MCP23017.h"  //https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
+  Adafruit_MCP23017 mcp;
+# include "RTClib.h"
+RTC_DS3231 RTC;
+# include "oled.h";
 
-// Basic pin reading and pullup test for the MCP23017 I/O expander
+//# include <DS3231RTC.h>          //https://github.com/adafruit/RTClib
 
-// Connect pin #12 of the expander to Analog 5 (i2c clock)
-// Connect pin #13 of the expander to Analog 4 (i2c data)
-// Connect pins #15, 16 and 17 of the expander to ground (address selection)
-// Connect pin #9 of the expander to 5V (power)
-// Connect pin #10 of the expander to ground (common ground)
-// Connect pin #18 through a ~10kohm resistor to 5V (reset pin, active low)
+# define dPinModeOutput(pin) mcp.pinMode(pin, OUTPUT);
+# define dPinModeInput(pin) mcp.pinMode(pin, INPUT);
+# define dPinModeInputPullup(pin) mcp.pinMode(pin, INPUT); mcp.pullUp(pin, HIGH);  // turn on a 100K pullup internally
+# define dWrite(pin, value) mcp.digitalWrite(pin, value)
+# define dRead(pin) mcp.digitalRead(pin)
 
-// Input #0 is on pin 21 so connect a button or switch from there to ground
 
-Adafruit_MCP23017 mcp;
+  byte Taster[4] = {5, 4, 7, 6}; // A4-A7
+  byte Relay[4] = {8, 9, 10, 11}; //B1-B4
+  byte statusLED = 12; // B5
+#else
+// esp8266 - Ports
+# define dPinModeOutput(pin) pinMode(pin, OUTPUT);
+# define dPinModeInput(pin) pinMode(pin, INPUT);
+# define dPinModeInputPullup(pin) pinMode(pin, INPUT_PULLUP); // turn on a 100K pullup internally
+# define dWrite(pin, value) digitalWrite(pin, value)
+# define dRead(pin) digitalRead(pin)
+  byte Taster[4] = {D2, D1, D4, D3}; //2,0,4,5
+  byte Relay[4] = {D5, D6, D7, D0}; //13,12,14,16 (D8 testweise D0)
+  byte statusLED = D8; // muss beim Booten unbedingt LOW sein!
+#endif //ifdef IIC
+
 
 extern "C" {
 #include "user_interface.h"
@@ -39,9 +60,6 @@ extern "C" {
   };
 */
 FSInfo fs_info;
-byte Taster[4] = {D2, D1, D4, D3}; //2,0,4,5
-byte Relay[4] = {D5, D6, D7, D0}; //13,12,14,16 (D8 testweise D0)
-byte statusLED = D8; // muss beim Booten unbedingt LOW sein!
 
 IPAddress apIP(192, 168, 168, 30); // wenn in AP-Mode
 
@@ -61,49 +79,52 @@ int i = 0;
 // 0- 3: Zustand der Relais,
 // 4- 7: Aktion nach Modulstart, nach Stromausfall: 0: aus, 1: ein, 2: letzter Zustand
 // 8-11: active_low: "0" beim schalten mit +5V , "1" beim schalten mit 0V
-//12-15: Wechselschalter: "!": Strom fließt bei 1 (Relais ein), "0": Strom fließt bei 0 (Relais aus)
-byte val[16] = {0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1};
+//12-15: Wechselschalter: "1": Strom fließt bei 1 (Relais ein), "0": Strom fließt bei 0 (Relais aus)
+//16-31: Aktion für Taster/Relais 1-4/1-4: 1-1, 1-2, 1-3, 1-4, 2-1 ...; Verhalten 0: aus, 1: ein, 2: letzter Zustand, 3: Zustand wechseln, Standard unabhängiges Wechselschalten 
+byte val[32] = {0, 0, 0, 0, 2, 2, 2, 2, 1, 1, 1, 1, 1, 1, 1, 1, 3, 2, 2, 2, 2, 3, 2, 2, 2, 2, 3, 2, 2, 2, 2, 3 };
 // Zustand der Taster
 byte TasterStatus[4];
 unsigned long TasterZeit[4];
 byte TasterAktion[4][4];
 String Temp = "";
-// Timer
-unsigned long NTPTime = 0, RTCTime = 0, RTCSync = 0, RTCfehlt = 0, ZeitTemp = 0, ZeitTempStd = 0, ZeitTempTag = 0;
 // nach 5 Versuchen für 24 Std aufgeben
-byte NTPfehlt = 0;
 int timeout = 0; //
 byte statusLEDsek = 0;
 
 /*  Status-Flags:
-    normale Funktion:  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+    normale Funktion:  !AP, WLANok, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
     in Setup
     AP                 schnelles Blinken 1 / 1 sek
-    WLAN_Fehlt         länger an als aus 5 / 1 sek
+    !WLANok         länger an als aus 5 / 1 sek
     NTP == 0           länger aus als an 1 / 5 sek
 */
 
-boolean AP = 0; // Acsespoint Modus aus
-boolean WLAN_Fehlt = 1;
 boolean inSetup = true;
 
 #include "timer.h"
 
 void Zeit_Einstellen()
 {
-  if (!WLAN_Fehlt) {
+  if (WLANok) {
     NTPTime = GetNTP();
   } else {
     NTPTime = 0;
   }
 
-  if (NTPTime != 0) {
-    if (!RTCfehlt && abs(RTCTime - NTPTime) > 1) {
-      RTCSync = NTPTime;
-      RTC.set(NTPTime);
-    }
+  if (NTPok) {
     setTime(NTPTime);
   }
+# ifdef IICTEST
+  if (RTCok) {
+    RTCTime = RTC.now().unixtime();
+    if (NTPok && abs(RTCTime - NTPTime) > 5) {
+      RTCSync = NTPTime;
+      //RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
+    } else if (!NTPok) {
+      setTime(RTCTime);
+    }
+  }
+# endif
 
   Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
   Serial.println( PrintTime(now()) );
@@ -112,9 +133,9 @@ void Zeit_Einstellen()
 void WlanStation()
 {
   if (AP) {
-    WLAN_Fehlt = true;
+    WLANok = false;
   } else {
-    if (WLAN_Fehlt) {
+    if (!WLANok) {
       Serial.print("Verbinde mit ");
       Serial.println(ssid);
       WiFi.setPhyMode(WIFI_PHY_MODE_11G);
@@ -143,13 +164,13 @@ void WlanStation()
     //if (WiFi.status() == WL_CONNECTED)
     if (WiFi.localIP())
     {
-      WLAN_Fehlt = 0;
+      WLANok = true;
       Serial.println("");
       Serial.println("Mit Wlan verbunden");
       Serial.print("IP Adresse: ");
       Serial.println(WiFi.localIP());
     } else {
-      WLAN_Fehlt = 1;
+      WLANok = false;
     }
   }
 }
@@ -237,25 +258,78 @@ void readInput() {
   }
 }
 
+# ifdef IICTEST
+void testIIC()
+{
+  byte error, address;
+  int nDevices;
+
+  Serial.println("Scanning...");
+
+  nDevices = 0;
+  for (address = 1; address < 127; address++ )
+  {
+    // The i2c_scanner uses the return value of
+    // the Write.endTransmisstion to see if
+    // a device did acknowledge to the address.
+    Wire.beginTransmission(address);
+    error = Wire.endTransmission();
+
+    if (error == 0)
+    {
+      if (address == IO_I2C_ADDRESS)  IOok  = 1;
+      if (address == RTC_I2C_ADDRESS) RTCok = 1;
+      if (address == DISPLAY_I2C_ADDRESS) DISPLAYok = 1;
+      Serial.print("I2C device found at address 0x");
+      if (address < 16)
+        Serial.print("0");
+      Serial.print(address, HEX);
+      Serial.println("  !");
+
+      nDevices++;
+    }
+    else if (error == 4)
+    {
+      Serial.print("Unknown error at address 0x");
+      if (address < 16)
+        Serial.print("0");
+      Serial.println(address, HEX);
+    }
+  }
+  if (nDevices == 0)
+    Serial.println("No I2C devices found\n");
+  else
+    Serial.println("done\n");
+}
+#endif
+
+
 // Wird 1 Mal beim Start ausgefuehrt
 void setup()
 {
-  mcp.begin();      // use default address 0
-
+  Serial.begin(115200);
+  Serial.println("Setup()");
+  
+  Serial.setDebugOutput(true);
+# ifdef IICTEST
+    Wire.begin(PIN_SDA, PIN_SCK);
+    testIIC();
+    if (IOok) {
+      mcp.begin(0);
+    }
+    if (DISPLAYok) {
+      oledSplash();
+    }
+# endif
   for (int k = 0; k < 4; k++) {
-    //pinMode(Relay[k], OUTPUT);
-    //digitalWrite(Relay[k], 0);
-    //pinMode(Taster[k], INPUT_PULLUP);
-    mcp.pinMode(Taster[k], INPUT);
-    mcp.pullUp(Taster[k], HIGH);  // turn on a 100K pullup internally
-    mcp.pinMode(Relay[k], OUTPUT);
-    mcp.digitalWrite(Relay[k], 0);
+    dPinModeInputPullup(Taster[k]);
+    dPinModeOutput(Relay[k]);
+    dWrite(Relay[k], val[8+k]);
   }
+  dPinModeOutput(statusLED);
   char inser;               // Serielle daten ablegen
   String nachricht = "";    //  Setup Formular
 
-  Serial.begin(115200);
-  Serial.setDebugOutput(true);
   EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
   if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
 
@@ -267,21 +341,21 @@ void setup()
   Serial.println("Info: i+<Enter>");
 }
 
-// nach 10 Sekunden 2. Teil von setup
+// nach 2 Sekunden 2. Teil von setup
 void setup2() {
   Serial.println("Weiter");
   Relais_Init();
 
-  // IIC (I2C) einbinden
-  //Wire.begin(); //Kommunikation über die Wire.h bibliothek beginnen.
-  setSyncProvider(RTC.get);   // the function to get the time from the RTC
-  RTCfehlt = (timeStatus() != timeSet);
-  if (RTCfehlt) {
-    Serial.println("Unable to sync with the RTC");
+# ifdef IICTEST
+  if (RTCok) {
+    RTC.begin();
+    RTCTime = RTC.now().unixtime();
+    setTime(RTCTime);
+    Serial.println(PrintDate(now()) + "   " + PrintTime (now()) + "   RTC gestartet");
   } else {
-    Serial.println("RTC has set the system time");
+    Serial.println("Unable to sync with the RTC");
   }
-  
+# endif
   if (!AP) {
     z = 0;
     LeseEeprom(ssid, sizeof(ssid));        // EEPROM lesen
@@ -308,6 +382,9 @@ void setup2() {
   }
 
   // ENDE Stationmodus / Access Point modus Auswahl
+  if (DISPLAYok) {
+    oledStatus();
+  }
   printUser();
   httpStart();
   Serial.println("Freies RAM = " + String(system_get_free_heap_size()));
@@ -464,7 +541,7 @@ void Relais_Schalten(int datensatz, byte ein, String logtext)
   }
   Temp += "     ";
   Temp += logtext;
-  mcp.digitalWrite(Relay[datensatz], val[datensatz + 8] ^ !val[datensatz + 12] ^ val[datensatz]);
+  dWrite(Relay[datensatz], val[datensatz + 8] ^ !val[datensatz + 12] ^ val[datensatz]);
   Serial.println(Temp);
   LogSchreiben(Temp);
 
@@ -498,6 +575,7 @@ void Ereignis_Zustand()
     Antwort += mVersionNr + mVersionBoard;
     Antwort += ";" + String(esp.getChipId()) + ";";
     Antwort += (UserStatus[nr] == COOKIE_ADMINISTRATOR ? "Administrator" : "Eingeschränkt");
+    Antwort += ";" + String(NTPok) + ";" + String(RTCok) + ";" + String(IOok) + ";" + String(DISPLAYok);
 
     server.sendHeader("Cache-Control", "no-cache");
     server.send(200, "text/plain", Antwort); // Antwort an Internet Browser senden
@@ -547,7 +625,7 @@ void ConfigJson()      // Wird ausgeuehrt wenn "http://<ip address>/" aufgerufen
     temp +=  "\"name3\":\"" + String(UserName) + "\",";
     temp +=  "\"pass3\":\"" + String(UserPasswort) + "\",";
     temp +=  "\"update\":\"" + String(UpdateServer) + "\"";
-    for (int k = 4; k < 16; k++) {
+    for (int k = 4; k < 32; k++) {
       temp +=  ",\"setup" + String(k) + "\":" + String(val[k]);
     }
     temp +=  " }";
@@ -561,7 +639,7 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
   if (is_authentified()) {
     File DataFile = SPIFFS.open("/relais.dat", "r+");
     DataFile.seek(sizeof(val[0]) * 4, SeekSet);
-    for (int k = 4; k < 16; k++) {
+    for (int k = 4; k < 32; k++) {
       val[k] = server.arg("setup" + String(k))[0] - 48;
       DataFile.write(reinterpret_cast<uint8_t*>(&val[k]), sizeof(val[0]));
     }
@@ -594,11 +672,13 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
 }
 
 void statusLedBlink(byte an, byte aus) {
-  if (statusLEDsek++ > an) {
-    mcp.digitalWrite(statusLED, LED_ON);
-    if (statusLEDsek > aus) statusLEDsek = 0;
+  if (statusLEDsek++ >= an) {
+    dWrite(statusLED, 0);
+    //Serial.print(0);
+    if (statusLEDsek > (an + aus)) statusLEDsek = 0;
   } else {
-    mcp.digitalWrite(statusLED, LED_OFF);
+    dWrite(statusLED, 1);
+    //Serial.print(1);
   }
 }
 
@@ -615,27 +695,32 @@ void loop()
   } else {
     for (int k = 0; k < 4; k++) {
       // durch Pullup ist Standard 1, gedrückt 0
-      int TasterTemp = !mcp.digitalRead(Taster[k]);
+      int TasterTemp = !dRead(Taster[k]);
       // TasterTemp Standard 0, gedrückt 1
       if (TasterTemp != TasterStatus[k] && millis() - TasterZeit[k] > 250) {
         // Prellen abfangen
-        Serial.print(k);
+        //Serial.print(k);
         TasterZeit[k] = millis();
         TasterStatus[k] = TasterTemp;
         if (TasterTemp)
         {
           val[k] = !val[k];
-          Relais_Schalten(k, val[k], "Taster");
+          String logText = "Taster " + String(k + 1);
+          Relais_Schalten(k, val[k], logText);
         }
       }
     }
     time_t jetzt = now();
 
     if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
-      if ( (NTPTime + 86400) < jetzt || (NTPTime == 0 && NTPfehlt++ < 6)) { //Zeit Update alle 24Stunden
+        oledStatus();
+      if ( (NTPTime + 86400) < jetzt || (NTPTime == 0 && !RTCok)) { //Zeit Update alle 24Stunden oder wenn gar keine Uhrzeit vorhanden ist
         WlanStation();
         Zeit_Einstellen();
         jetzt = now();
+      }    
+      if (ZeitTempMin + 60 < jetzt) { // Ausführung 1 mal je Minute
+        ZeitTempMin = jetzt;
       }
       if (ZeitTempStd + 3600 < jetzt) { // Ausführung 1 mal je Stunde
         if (sommerzeitTest()) {
@@ -645,45 +730,26 @@ void loop()
         ZeitTempStd = jetzt;
       }
       if (ZeitTempTag + 86400 < jetzt) { // Ausführung 1 mal je Tag
-        if (sommerzeitTest()) {
-          Zeit_Einstellen();
-          jetzt = now();
-        }
         ZeitTempTag = jetzt;
       }
       ZeitTemp = jetzt;
       //  in Setup
       if (AP) {
         //  AP                 schnelles Blinken 1 / 1 sek
-        if (statusLEDsek++ > 1) {
-          mcp.digitalWrite(statusLED, 1);
-          statusLEDsek = 0;
-        } else {
-          mcp.digitalWrite(statusLED, 0);
-        }
-      } else if (WLAN_Fehlt) {
-        //  WLAN_Fehlt         länger an als aus 5 / 1 sek
-        if (statusLEDsek++ > 1) {
-          mcp.digitalWrite(statusLED, 1);
-          if (statusLEDsek > 5) statusLEDsek = 0;
-        } else {
-          mcp.digitalWrite(statusLED, 0);
-        }
+        statusLedBlink(2, 2);
+      } else if (!WLANok) {
+        //  !WLANok         länger an als aus 5 / 1 sek
+        statusLedBlink(5, 2);
       } else if ((NTPTime + 86400) < jetzt) {
         //  NTP ungültig       länger aus als an 1 / 5 sek
-        if (statusLEDsek++ > 5) {
-          mcp.digitalWrite(statusLED, 1);
-          statusLEDsek = 0;
-        } else {
-          mcp.digitalWrite(statusLED, 0);
-        }
+        statusLedBlink(2, 5);
       } else {
-        //  normale Funktion "Station":  !AP, !WLAN_Fehlt, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
-        statusLedBlink(5, 10);
+        //  normale Funktion "Station":  !AP, WLANok, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
+        statusLedBlink(5, 5);
       }
       // Timer auch wenn offline, aber nur wenn gueltige Zeit
-      if (NTPTime || !RTCfehlt) {
-        Timer_pruefen(&ZeitTemp); 
+      if (NTPTime || RTCok) {
+        Timer_pruefen(&ZeitTemp);
       }
     }
 

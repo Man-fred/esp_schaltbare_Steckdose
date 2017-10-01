@@ -239,6 +239,11 @@ function LesenAjax()
             document.getElementById("version").innerHTML = StatusArr[17];
             document.getElementById("ChipID").innerHTML = StatusArr[18];
             document.getElementById("userstatus").innerHTML = StatusArr[19];
+            document.getElementById("NTPok").innerHTML = StatusArr[20];
+            document.getElementById("RTCok").innerHTML = StatusArr[21];
+            document.getElementById("IOok").innerHTML = StatusArr[22];
+            document.getElementById("DISPLAYok").innerHTML = StatusArr[23];
+            
             if (userInit && StatusArr[19] === 'Administrator') {
                 userInit = 0;
                 document.querySelector("#m_page3").classList.remove('pure-menu-disabled');
