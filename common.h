@@ -4,7 +4,10 @@
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 
-String mVersionNr = "E00-03-03.ino.";
+#define LED_ON LOW
+#define LED_OFF HIGH
+
+String mVersionNr = "E00-03-05.ino.";
 #ifdef ARDUINO_ESP8266_NODEMCU
   const byte board = 1;
   String mVersionBoard = "nodemcu";
@@ -35,11 +38,20 @@ char AdminPasswort[LOGINLAENGE] = "\0";
 char UserName[LOGINLAENGE] = "user\0";
 char UserPasswort[LOGINLAENGE] = "\0";
 char UpdateServer[LOGINLAENGE] = "192.168.178.60\0";
+char ZeitServer[LOGINLAENGE] = "192.168.178.1\0";
 int  UserCookie[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserStatus[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserNext=0;
 int  UserCurrent = -1;
+
 boolean sommerzeit = false;
 const char* serverIndex = "<form method='POST' action='/upload' enctype='multipart/form-data'><input type='file' name='upload'><input type='submit' value='Upload'></form>";
+
+// Timer
+unsigned long NTPTime = 0, RTCTime = 0, RTCSync = 0, ZeitTemp = 0, ZeitTempMin = 0, ZeitTempStd = 0, ZeitTempTag = 0;
+// Status
+byte NTPok = 0, WLANok = 0, IOok = 0, RTCok = 0, DISPLAYok = 0;
+boolean AP = 0; // Accesspoint Modus aus
+
 
 #endif
