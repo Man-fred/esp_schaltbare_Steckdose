@@ -1,40 +1,4 @@
 02.08.2016 - 10:10 Start update, client 192.168.178.50, User-Agent Mozilla/5.0 (Windows NT 10.0; WOW64; rv:48.0) Gecko/20100101 Firefox/48.0, ESP-MAC , Version 
 02.08.2016 - 10:10 Abort update, only for ESP8266
-02.08.2016 - 10:12 Start update, client 192.168.178.71, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:14:6E:F9, Version V01-03-03.ino.d1_mini
-02.08.2016 - 10:12 Update V01-03-03.ino.d1_mini not modified
-02.08.2016 - 10:24 Start update, client 192.168.178.45, User-Agent ESP8266-http-Update, ESP-MAC 18:FE:34:D6:12:C8, Version V01-01-03.ino.d1_mini
-02.08.2016 - 10:24 Update V01-03-03.ino.d1_mini ok
-02.08.2016 - 10:36 Start update, client 192.168.178.72, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:15:0E:A2, Version V01-03-02.ino.nodemcu
-02.08.2016 - 10:36 Update V01-03-03.ino.d1_mini ok
-02.08.2016 - 19:18 Start update, client 192.168.178.32, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:0B:17:10, Version V01-01-03.ino.nodemcu
-02.08.2016 - 19:18 Abort update, no version for ESP MAC in table
-02.08.2016 - 19:21 Start update, client 192.168.178.32, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:0B:17:10, Version V01-01-03.ino.nodemcu
-02.08.2016 - 19:21 Update V01-03-03.ino.nodemcu ok
-03.08.2016 - 16:13 Start update, client 192.168.178.32, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:0B:17:10, Version V01-03-06.ino.nodemcu
-03.08.2016 - 16:13 Abort update, version on chip newer as V01-04-00.ino.nodemcu
-03.08.2016 - 16:16 Start update, client 192.168.178.32, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:0B:17:10, Version V01-03-06.ino.nodemcu
-03.08.2016 - 16:16 Update V01-04-00.ino.nodemcu ok
-03.08.2016 - 17:00 Start update, client 192.168.178.45, User-Agent ESP8266-http-Update, ESP-MAC 18:FE:34:D6:12:C8, Version V01-03-03.ino.nodemcu
-03.08.2016 - 17:00 Update V01-04-00.ino.nodemcu ok
-03.08.2016 - 17:00 Start update, client 192.168.178.72, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:15:0E:A2, Version V01-03-03.ino.d1_mini
-03.08.2016 - 17:00 Update V01-04-00.ino.d1_mini ok
-03.08.2016 - 17:08 Start update, client 192.168.178.71, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:14:6E:F9, Version V01-03-03.ino.d1_mini
-03.08.2016 - 17:08 Update V01-04-00.ino.d1_mini ok
-04.08.2016 - 09:41 Start update, client 192.168.178.72, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:15:0E:A2, Version V01-04-00.ino.d1_mini
-04.08.2016 - 09:41 Update V01-04-02.ino.d1_mini ok
-04.08.2016 - 10:16 Start update, client 192.168.178.72, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:15:0E:A2, Version V01-04-02.ino.d1_mini
-04.08.2016 - 10:16 Update V01-04-03.ino.d1_mini ok
-04.08.2016 - 20:25 Start update, client 192.168.178.32, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:0B:17:10, Version V01-04-00.ino.nodemcu
-04.08.2016 - 20:25 Update V01-04-04.ino.nodemcu ok
-10.09.2017 - 17:45 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-01.ino.nodemcu
-10.09.2017 - 17:45 Abort update, no version for ESP MAC in table
-10.09.2017 - 20:49 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-01.ino.nodemcu
-10.09.2017 - 20:49 Abort update, no version for ESP MAC in table
-10.09.2017 - 20:50 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-01.ino.nodemcu
-10.09.2017 - 20:50 Abort update, file E00-03-02.ino.nodemcu.bin not found
-10.09.2017 - 21:22 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-01.ino.nodemcu
-10.09.2017 - 21:22 Update E00-03-02.ino.nodemcu ok
-10.09.2017 - 21:32 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-01.ino.nodemcu
-10.09.2017 - 21:32 Update E00-03-02.ino.nodemcu ok
 10.09.2017 - 22:41 Start update, client 192.168.178.86, User-Agent ESP8266-http-Update, ESP-MAC 5C:CF:7F:02:84:CF, Version E00-03-03.ino.nodemcu
 10.09.2017 - 22:41 Update E00-03-03.ino.nodemcu not modified

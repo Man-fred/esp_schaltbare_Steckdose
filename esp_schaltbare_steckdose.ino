@@ -29,13 +29,13 @@
 # ifdef USE_LED_BUILTIN
     byte statusLED = LED_BUILTIN; // D4 -> 2 bei Wemos d1 mini, D0 -> 16 bei Nodemcu
 #   define dPinModeLED pinMode(statusLED, OUTPUT);
-#   define dWriteLED(value) mcp.digitalWrite(statusLED, value)
+#   define dWriteLED(value) digitalWrite(statusLED, value)
 #   define LED_ON LOW
 #   define LED_OFF HIGH
 # else  
     byte statusLED = 12; // B5
 #   define dPinModeLED mcp.pinMode(statusLED, OUTPUT);
-#   define dWriteLED(value) digitalWrite(statusLED, value)
+#   define dWriteLED(value) mcp.digitalWrite(statusLED, value)
 #   define LED_ON LOW
 #   define LED_OFF HIGH
 # endif
@@ -392,9 +392,11 @@ void setup2() {
   }
 
   // ENDE Stationmodus / Access Point modus Auswahl
-  if (DISPLAYok) {
-    oledStatus();
-  }
+# ifdef IICTEST
+    if (DISPLAYok) {
+      oledStatus();
+    }
+# endif
   printUser();
   httpStart();
   Serial.println("Freies RAM = " + String(system_get_free_heap_size()));
@@ -589,7 +591,7 @@ void Ereignis_Zustand()
     }
     Antwort += PrintDate(now()) + " " + PrintTime(now()) + ";";
     // Version + ChipId
-    Antwort += mVersionNr + mVersionBoard;
+    Antwort += mVersionNr + mVersionVariante + mVersionBoard;
     Antwort += ";" + String(esp.getChipId()) + ";";
     Antwort += (UserStatus[nr] == COOKIE_ADMINISTRATOR ? "Administrator" : "Eingeschränkt");
     Antwort += ";" + String(NTPok) + ";" + String(RTCok) + ";" + String(IOok) + ";" + String(DISPLAYok);
@@ -731,7 +733,9 @@ void loop()
     time_t jetzt = now();
 
     if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
+#     ifdef IICTEST
         oledStatus();
+#     endif
       if ( (NTPTime + 86400) < jetzt || (NTPTime == 0 && !RTCok)) { //Zeit Update alle 24Stunden oder wenn gar keine Uhrzeit vorhanden ist
         WlanStation();
         Zeit_Einstellen();

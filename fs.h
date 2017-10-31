@@ -146,7 +146,7 @@ void updateVersion() {
   if (is_authentified()) {
     server.sendHeader("Location", "/index.htm");
     server.send(303, "text/html", ""); // Antwort an Internet Browser
-    t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateServer, 80, "/esp8266/ota.php", (mVersionNr + mVersionBoard).c_str());
+    t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateServer, 80, "/esp8266/ota.php", (mVersionNr + mVersionVariante + mVersionBoard).c_str());
   
     switch (ret) {
       case HTTP_UPDATE_FAILED:

@@ -4,14 +4,18 @@
 // ********** Globale Einstellungen zum Layout und zur Version **************
 #define IICTEST
 #define USE_LED_BUILTIN
-String mVersionNr = "E00-04-00.ino.";
+String mVersionNr = "V00-04-01.";
 // ********** Ende der Einstellungen ****************************************
 
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 
 #ifdef IICTEST
-  String mVersionVariante = "iic.";
+# ifdef USE_LED_BUILTIN
+    String mVersionVariante = "iic.";
+# else
+    String mVersionVariante = "i2c.";
+# endif
 #else
   String mVersionVariante = "min.";
 #endif //ifdef IIC
