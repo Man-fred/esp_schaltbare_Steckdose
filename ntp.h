@@ -161,7 +161,9 @@ String PrintDate (unsigned long epoch)
 boolean sommerzeitTest() {
   if (SUMMERTIME) {
     time_t jetzt = now();
-    return (summertime(year(jetzt), month(jetzt), day(jetzt),  hour(jetzt), TIMEZONE) ? !sommerzeit : sommerzeit);
+    boolean sommerzeitAlt = sommerzeit;
+    sommerzeit = summertime(year(jetzt), month(jetzt), day(jetzt),  hour(jetzt), TIMEZONE);
+    return ( sommerzeit != sommerzeitAlt);
   }
   return false;
 }
