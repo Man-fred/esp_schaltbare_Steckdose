@@ -1,13 +1,21 @@
 #ifndef COMMON_H
 #define COMMON_H
-// #define DEBUG_ESP_HTTP_SERVER
+
+// ********** Globale Einstellungen zum Layout und zur Version **************
+#define IICTEST
+#define USE_LED_BUILTIN
+String mVersionNr = "E00-04-00.ino.";
+// ********** Ende der Einstellungen ****************************************
+
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 
-#define LED_ON LOW
-#define LED_OFF HIGH
+#ifdef IICTEST
+  String mVersionVariante = "iic.";
+#else
+  String mVersionVariante = "min.";
+#endif //ifdef IIC
 
-String mVersionNr = "E00-03-05.ino.";
 #ifdef ARDUINO_ESP8266_NODEMCU
   const byte board = 1;
   String mVersionBoard = "nodemcu";

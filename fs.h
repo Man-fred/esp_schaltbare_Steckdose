@@ -143,23 +143,25 @@ void handleNotFound() {
 }
 
 void updateVersion() {
-  server.sendHeader("Location", "/index.htm");
-  server.send(303, "text/html", ""); // Antwort an Internet Browser
-  t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateServer, 80, "/esp8266/ota.php", (mVersionNr + mVersionBoard).c_str());
-
-  switch (ret) {
-    case HTTP_UPDATE_FAILED:
-      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " Update failed.");
-      break;
-    case HTTP_UPDATE_NO_UPDATES:
-      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " No update.");
-      break;
-    case HTTP_UPDATE_OK:
-      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " Update ok."); // may not called we reboot the ESP
-      break;
-    default:
-      DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionBoard + " unknown error");
-      break;
+  if (is_authentified()) {
+    server.sendHeader("Location", "/index.htm");
+    server.send(303, "text/html", ""); // Antwort an Internet Browser
+    t_httpUpdate_return ret = ESPhttpUpdate.update(UpdateServer, 80, "/esp8266/ota.php", (mVersionNr + mVersionBoard).c_str());
+  
+    switch (ret) {
+      case HTTP_UPDATE_FAILED:
+        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update failed.");
+        break;
+      case HTTP_UPDATE_NO_UPDATES:
+        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " No update.");
+        break;
+      case HTTP_UPDATE_OK:
+        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update ok."); // may not called, we reboot the ESP
+        break;
+      default:
+        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " unknown error");
+        break;
+    }
   }
 }
 

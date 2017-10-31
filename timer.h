@@ -244,8 +244,10 @@ void Timer_Laden(bool neustart = false)
 
 void Ereignis_Timer_Laden()
 {
-  Timer_Laden();
-  Route_Timers_Zeigen();
+  if (is_authentified()) {
+    Timer_Laden();
+    Route_Timers_Zeigen();
+  }
 }
 
 void Ereignis_DeleteTimer()

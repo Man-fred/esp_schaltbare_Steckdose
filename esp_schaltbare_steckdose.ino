@@ -8,7 +8,6 @@
 #include "ntp.h"
 #include <TimeLib.h>             //<Time.h> http://www.arduino.cc/playground/Code/Time
 
-#define IICTEST
 #ifdef IICTEST
 # include <Wire.h>               //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
 # define PIN_SDA D5
@@ -17,24 +16,31 @@
 # define RTC_I2C_ADDRESS 0x68
 # include "Adafruit_MCP23017.h"  //https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
   Adafruit_MCP23017 mcp;
-# include "RTClib.h"
-RTC_DS3231 RTC;
+# include "RTClib.h"             //https://github.com/adafruit/RTClib
+  RTC_DS3231 RTC;
 # include "oled.h";
-
-//# include <DS3231RTC.h>          //https://github.com/adafruit/RTClib
-
 # define dPinModeOutput(pin) mcp.pinMode(pin, OUTPUT);
 # define dPinModeInput(pin) mcp.pinMode(pin, INPUT);
 # define dPinModeInputPullup(pin) mcp.pinMode(pin, INPUT); mcp.pullUp(pin, HIGH);  // turn on a 100K pullup internally
 # define dWrite(pin, value) mcp.digitalWrite(pin, value)
 # define dRead(pin) mcp.digitalRead(pin)
-
-
   byte Taster[4] = {5, 4, 7, 6}; // A4-A7
   byte Relay[4] = {8, 9, 10, 11}; //B1-B4
-  byte statusLED = 12; // B5
+# ifdef USE_LED_BUILTIN
+    byte statusLED = LED_BUILTIN; // D4 -> 2 bei Wemos d1 mini, D0 -> 16 bei Nodemcu
+#   define dPinModeLED pinMode(statusLED, OUTPUT);
+#   define dWriteLED(value) mcp.digitalWrite(statusLED, value)
+#   define LED_ON LOW
+#   define LED_OFF HIGH
+# else  
+    byte statusLED = 12; // B5
+#   define dPinModeLED mcp.pinMode(statusLED, OUTPUT);
+#   define dWriteLED(value) digitalWrite(statusLED, value)
+#   define LED_ON LOW
+#   define LED_OFF HIGH
+# endif
 #else
-// esp8266 - Ports
+// ********** esp8266 - Ports ohne IIC *****************
 # define dPinModeOutput(pin) pinMode(pin, OUTPUT);
 # define dPinModeInput(pin) pinMode(pin, INPUT);
 # define dPinModeInputPullup(pin) pinMode(pin, INPUT_PULLUP); // turn on a 100K pullup internally
@@ -43,6 +49,10 @@ RTC_DS3231 RTC;
   byte Taster[4] = {D2, D1, D4, D3}; //2,0,4,5
   byte Relay[4] = {D5, D6, D7, D0}; //13,12,14,16 (D8 testweise D0)
   byte statusLED = D8; // muss beim Booten unbedingt LOW sein!
+# define dPinModeLED pinMode(statusLED, OUTPUT);
+# define dWriteLED(value) digitalWrite(statusLED, value)
+# define LED_ON LOW
+# define LED_OFF HIGH
 #endif //ifdef IIC
 
 
@@ -115,15 +125,15 @@ void Zeit_Einstellen()
     setTime(NTPTime);
   }
 # ifdef IICTEST
-  if (RTCok) {
-    RTCTime = RTC.now().unixtime();
-    if (NTPok && abs(RTCTime - NTPTime) > 5) {
-      RTCSync = NTPTime;
-      //RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
-    } else if (!NTPok) {
-      setTime(RTCTime);
+    if (RTCok) {
+      RTCTime = RTC.now().unixtime();
+      if (NTPok && abs(RTCTime - NTPTime) > 5) {
+        RTCSync = NTPTime;
+        //RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
+      } else if (!NTPok) {
+        setTime(RTCTime);
+      }
     }
-  }
 # endif
 
   Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
@@ -326,7 +336,7 @@ void setup()
     dPinModeOutput(Relay[k]);
     dWrite(Relay[k], val[8+k]);
   }
-  dPinModeOutput(statusLED);
+  dPinModeLED;
   char inser;               // Serielle daten ablegen
   String nachricht = "";    //  Setup Formular
 
@@ -432,17 +442,24 @@ void httpStart() {
   server.on("/list", HTTP_GET, handleFileList);
 
   server.on("/upload", HTTP_GET, []() {
-    server.sendHeader("Connection", "close");
-    server.sendHeader("Access-Control-Allow-Origin", "*");
-    server.send(200, "text/html", serverIndex);
+    if (is_authentified()) {
+      server.sendHeader("Connection", "close");
+      server.sendHeader("Access-Control-Allow-Origin", "*");
+      server.send(200, "text/html", serverIndex);
+    }
   });
-  server.on("/upload",      HTTP_POST, []() {
-    server.send(200, "text/html", serverIndex);
+  server.on("/upload", HTTP_POST, []() {
+    if (is_authentified()) {
+      server.send(200, "text/html", serverIndex);
+    }
   }, handleFileUpload);
+  
   server.on("/upload.json", HTTP_POST, []() {
-    server.send(200, "text/json", "{\"ok\":1}");
+    if (is_authentified()) {
+      server.send(200, "text/json", "{\"ok\":1}");
+    }
   }, handleFileUpload);
-  server.on("/delete",      HTTP_GET, handleFileDelete);
+  server.on("/delete", HTTP_GET, handleFileDelete);
 
   //called when the url is not defined here
   //use it to load content from SPIFFS
@@ -673,11 +690,12 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
 
 void statusLedBlink(byte an, byte aus) {
   if (statusLEDsek++ >= an) {
-    dWrite(statusLED, 0);
+    dWriteLED(LED_OFF);
     //Serial.print(0);
-    if (statusLEDsek > (an + aus)) statusLEDsek = 0;
+    if (statusLEDsek > (an + aus))
+      statusLEDsek = 0;
   } else {
-    dWrite(statusLED, 1);
+    dWriteLED(LED_ON);
     //Serial.print(1);
   }
 }
