@@ -1,4 +1,8 @@
+#ifndef FS_INO_H
+#define FS_INO_H
+
 #include "common.h";
+#include "log.h"
 
 File fsUploadFile;
 extern byte is_authentified();
@@ -55,6 +59,8 @@ void handleFileUpload() {
         fsUploadFile.close();
         DBG_OUTPUT_PORT.print("handleFileUpload End  : "); DBG_OUTPUT_PORT.println(upload.totalSize);
       }
+    } else if (upload.status == UPLOAD_FILE_ABORTED) {
+        DBG_OUTPUT_PORT.println("handleFileUpload Aborted");
     }
   }
 }
@@ -151,19 +157,21 @@ void updateVersion() {
   
     switch (ret) {
       case HTTP_UPDATE_FAILED:
-        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update failed.");
+        LogSchreibenNow("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update failed.");
+        LogSchreibenNow(/*ESPhttpUpdate.getLastError() +" "+*/ ESPhttpUpdate.getLastErrorString().c_str());
         break;
       case HTTP_UPDATE_NO_UPDATES:
         DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " No update.");
         break;
       case HTTP_UPDATE_OK:
-        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update ok."); // may not called, we reboot the ESP
+        LogSchreibenNow("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " Update ok."); // may not called, we reboot the ESP
         break;
       default:
-        DBG_OUTPUT_PORT.println("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " unknown error");
+        LogSchreibenNow("[update] " + mVersionNr + mVersionVariante + mVersionBoard + " unknown error");
+        LogSchreibenNow(/*ESPhttpUpdate.getLastError() +" "+*/ ESPhttpUpdate.getLastErrorString().c_str());
         break;
     }
   }
 }
-
+#endif
 

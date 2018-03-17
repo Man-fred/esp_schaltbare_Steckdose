@@ -6,7 +6,6 @@
 #include "fs.h";
 #include "log.h"
 #include "ntp.h"
-#include <TimeLib.h>             //<Time.h> http://www.arduino.cc/playground/Code/Time
 
 #ifdef IICTEST
 # include <Wire.h>               //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
@@ -125,13 +124,11 @@ void Zeit_Einstellen()
 
   if (NTPok) {
     if(abs(NTPTime - now()) > 5) {
-      Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
-      //LogSchreiben(Temp);
-      Serial.println( Temp );
+      LogSchreibenNow("falsche Zeit");
+      //Serial.println( Temp );
       setTime(NTPTime);
-      Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   NTP: Zeit gesetzt";
-      //LogSchreiben(Temp);
-      Serial.println( Temp );
+      LogSchreiben("NTP: Zeit gesetzt");
+      //Serial.println( Temp );
     }
   }
 # ifdef IICTEST
@@ -139,24 +136,17 @@ void Zeit_Einstellen()
       RTCTime = RTC.now().unixtime();
       if (NTPok) {
         if(abs(RTCTime - NTPTime) > 5) {
-          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
-          //LogSchreiben(Temp);
-          Serial.println( Temp );
+          Temp = PrintDate(RTCTime) + "   " + PrintTime(RTCTime) + "   falsche RTC-Zeit";
+          LogSchreiben(Temp);
+          //Serial.println( Temp );
           RTCSync = NTPTime;
           RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
-          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   RTC: Zeit von NTP geholt";
-          //LogSchreiben(Temp);
-          Serial.println( Temp );
         }
       } else {
         if(abs(RTCTime - now()) > 5) {
-          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
-          //LogSchreiben(Temp);
-          Serial.println( Temp );
+          LogSchreibenNow("falsche Zeit");
           setTime(RTCTime);
-          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   RTC: Zeit gesetzt";
-          //LogSchreiben(Temp);
-          Serial.println( Temp );
+          LogSchreiben("RTC: Zeit gesetzt");
         }
       }
     }

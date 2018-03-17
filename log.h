@@ -1,3 +1,9 @@
+#ifndef LOG_INO_H
+#define LOG_INO_H
+
+#include "common.h";
+#include "ntp.h"
+
 
 // if (SPIFFS.remove("/Daten.txt") ) Serial.println("Datei Daten.txt gelöscht");
 
@@ -37,6 +43,11 @@ boolean LogSchreiben(String Daten)
   return true;
 }
 
+boolean LogSchreibenNow(String Daten) {
+  //String Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   " + Daten;
+  return LogSchreiben(PrintDate(now()) + "   " + PrintTime (now()) + "   " + Daten);
+}
 
+#endif
 
 

@@ -4,9 +4,10 @@
 // ********** Globale Einstellungen zum Layout und zur Version **************
 #define IICTEST
 #define USE_LED_BUILTIN
-String mVersionNr = "V01-00-00.";
+String mVersionNr = "V01-00-02.";
 // ********** Ende der Einstellungen ****************************************
 
+#include <TimeLib.h>             //<Time.h> http://www.arduino.cc/playground/Code/Time
 #define DEBUG_OUTPUT Serial
 #define DBG_OUTPUT_PORT Serial
 

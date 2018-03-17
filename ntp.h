@@ -1,3 +1,6 @@
+#ifndef NTP_H
+#define NTP_H
+
 #include "common.h";
 #include <TimeLib.h>
 #include <WiFiUdp.h>
@@ -312,3 +315,4 @@ boolean buss_und_bettag()
   return false;
 
 }
+#endif
