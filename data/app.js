@@ -509,6 +509,7 @@ function filesUpload()
             if (this.status == 200) {
                 //var j = JSON.parse(this.responseText);
                 notification("success", "Datei geladen");
+                document.getElementById("uploadfile").innerHTML = '';
             } else {
                 notification("error", "Datei nicht geladen: Status " + this.status + " " + this.statusText);
             }

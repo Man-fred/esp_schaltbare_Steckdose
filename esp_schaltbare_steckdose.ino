@@ -452,7 +452,7 @@ void getEeprom() {
     AdminPasswort[0] = 0;
     strcpy(AdminName, "admin");
     UserPasswort[0] = 0;
-    strcpy(UserName[0], "user");
+    strcpy(UserName, "user");
     UpdateServer[0] = 0;
     strcpy(timeserver, "time.nist.gov");
     strcpy(name_timer, "Wifi 4-fach Timer");
