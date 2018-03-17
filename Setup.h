@@ -20,7 +20,7 @@ unsigned int hexToDec(String hexString) {
   return decValue;
 }
 
-void LeseEeprom(char *daten, int lenge)
+void LeseEeprom(char *daten, int laenge)
 {
   char a;
   do {
@@ -28,8 +28,8 @@ void LeseEeprom(char *daten, int lenge)
     *daten = a;
     daten++;
     z++;
-    lenge--;
-    if (!lenge)break;
+    laenge--;
+    if (!laenge)break;
   }
   while (a);
 }
@@ -75,6 +75,20 @@ void SchreibeEeprom (String k)
   }
   EEPROM.write(z, '\0');
   z++;
+}
+void SchreibeEepromCheck ()
+{
+  EEPROM.write(z, 0x55);
+  Serial.print('Sreibe EEPROM-Pos ');
+  Serial.println(z);
+}
+int LeseEepromCheck ()
+{
+  int check = 0;
+  check = EEPROM.read(z);
+  Serial.print('Lese EEPROM-Pos ');
+  Serial.println(z);
+  return check;
 }
 
 

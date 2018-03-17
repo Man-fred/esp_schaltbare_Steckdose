@@ -54,6 +54,11 @@ var userInit = 1;
             toggleAll(e);
         }
     };
+    menu.onclick = function (e) {
+        if (menu.className.indexOf('active') !== -1) {
+            toggleAll(e);
+        }
+    };
 
     myAjax = new XMLHttpRequest();
     if (!myAjax)
@@ -154,13 +159,19 @@ function startPage3()
             ajaxOnline = (this.status === 200);
             if (ajaxOnline) {
                 var j = JSON.parse(this.responseText);
+                document.getElementById("name_timer").value = j.name_timer;
+                document.getElementById("name_r1").value = j.name_r1;
+                document.getElementById("name_r2").value = j.name_r2;
+                document.getElementById("name_r3").value = j.name_r3;
+                document.getElementById("name_r4").value = j.name_r4;
                 document.getElementById("ssid").value = j.ssid1;
                 document.getElementById("pass").value = j.pass1;
+                document.getElementById("timeserver").value = j.timeserver;
+                document.getElementById("UpdateServer").value = j.update;
                 document.getElementById("AdminName").value = j.name2;
                 document.getElementById("AdminPasswort").value = j.pass2;
                 document.getElementById("UserName").value = j.name3;
                 document.getElementById("UserPasswort").value = j.pass3;
-                document.getElementById("UpdateServer").value = j.update;
                 document.getElementById("setup4").value = j.setup4;
                 document.getElementById("setup5").value = j.setup5;
                 document.getElementById("setup6").value = j.setup6;
@@ -243,7 +254,12 @@ function LesenAjax()
             document.getElementById("RTCok").innerHTML = StatusArr[21];
             document.getElementById("IOok").innerHTML = StatusArr[22];
             document.getElementById("DISPLAYok").innerHTML = StatusArr[23];
-            
+            document.getElementById("NameTimer").innerHTML = StatusArr[24];
+            document.getElementById("NameR1").innerHTML = StatusArr[25];
+            document.getElementById("NameR2").innerHTML = StatusArr[26];
+            document.getElementById("NameR3").innerHTML = StatusArr[27];
+            document.getElementById("NameR4").innerHTML = StatusArr[28];
+            document.title = StatusArr[24];
             if (userInit && StatusArr[19] === 'Administrator') {
                 userInit = 0;
                 document.querySelector("#m_page3").classList.remove('pure-menu-disabled');

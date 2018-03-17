@@ -1,10 +1,5 @@
 <!DOCTYPE html>
-<!--
-To change this license header, choose License Headers in Project Properties.
-To change this template file, choose Tools | Templates
-and open the template in the editor.
--->
-<html>
+<html manifest="app.manifest">
     <head>
         <title>ESP8266 Setup</title>
         <meta charset="UTF-8">
@@ -41,28 +36,34 @@ and open the template in the editor.
                         <li id="m_page5" class="pure-menu-item pure-menu-disabled">
                             <a href="#page5" class="pure-menu-link" onclick="load_page('page5');">Dateisystem</a>
                         </li>
+                        <li><br /></li>
+                    <li class="menu-item-divided">ChipID: <span id="ChipID"></span></li>
+                    <li>Firmware Version: <span id="version"></span></li>
+                    <li>&copy; Manfred Bielemeier Lizenz:GPL</li>
                     </ul>
                 </div>
             </div>
             <div id="main">
-                <header class="header pure-g">
-                    <div class="pure-u-1-3">
-                        <h1>Wifi 4-fach Timer</h1>
-                    </div>
-                    <div class="pure-u-1-3">
-                        Aktuelle&nbsp;Zeit:&nbsp;<span id="aktuell"></span><br />Berechtigung:&nbsp;<span id="userstatus"></span>
-                    </div>
-                    <div  class="pure-u-1-3 linksmitte">
-                        <span id="buttonsSmall">
-                            <button class="btn00">S 1</button> <button class="btn00">S 2</button> <button class="btn00">S 3</button> <button class="btn00">S 4</button>
-                        </span><br />
-                        <span id="buttonsLED">
-                            <button class="btn21">Led1</button> <button class="btn21">Led2</button> <button class="btn01">Led3</button> <button class="btn01">Led4</button>
-                        </span>
+                <header class="row">
+                    <div class="column full">
+                        <h1><span id="NameTimer">Wifi 4-fach Timer</span></h1>
                     </div>
                 </header>
                 <section id="content" class="content">
-                    <div id="page0" class="page  hide">
+                    <div class=row">
+                    <div class="nowrap column half">
+                        Aktuelle&nbsp;Zeit:&nbsp;<span id="aktuell"></span><br />Berechtigung:&nbsp;<span id="userstatus"></span>
+                    </div>
+                    <div  class="column half linksmitte">
+                        <span id="buttonsSmall" class="nowrap">
+                            <button class="btn00">S 1</button>&nbsp;<button class="btn00">S 2</button>&nbsp;<button class="btn00">S 3</button>&nbsp;<button class="btn00">S 4</button>
+                        </span><br />
+                        <span id="buttonsLED" class="nowrap">
+                            <button class="btn21">Led1</button>&nbsp;<button class="btn21">Led2</button>&nbsp;<button class="btn21">Led3</button>&nbsp;<button class="btn21">Led4</button>
+                        </span>
+                    </div>
+                    </div>
+                    <div id="page0" class="row page hide">
                         <h2>WLAN Steckdosenleiste</h2>
                         <table style="text-align: left; width: 100%; height: 45px;" border="0" cellpadding="0" cellspacing="0">
 
@@ -81,86 +82,125 @@ and open the template in the editor.
                                         <button id="button3" class="btn" onclick="Taster(3)">ON</button>     
                                     </td>
                                 </tr>
+                                <tr>
+                                    <td><span id="NameR1"></span></td>
+                                    <td><span id="NameR2"></span></td>
+                                    <td><span id="NameR3"></span></td>
+                                    <td><span id="NameR4"></span></td>
+                                </tr>
                             </tbody>
                         </table>  
                     </div>
-                    <div id="page1" class="page hide">
+                    <div id="page1" class="row page hide">
                         <h2>Timer Verwaltung</h2>
                         <a href="/laden.html" class="pure-button">Timer aktualisieren</a>
 
                         <table align="center" id="timertable"></table>
                     </div>
-                    <div id="page3" class="page hide">
+                    <div id="page3" class="row page hide">
                         <h2>Konfiguration des ESP8266</h2>
                         <form method="post" action="setup.php"  class="pure-form pure-form-aligned">
                             <fieldset>
+                                <legend>Beschreibung</legend>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="name_timer">Timer Name</label> 
+                                    <input name="name_timer" id="name_timer" value="Timer" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="name_r1">Relais 1 Name</label>
+                                    <input name="name_r1" id="name_r1" value="Relais 1" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="name_r2">Relais 2 Name</label>
+                                    <input name="name_r2" id="name_r2" value="Relais 2" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="name_r3">Relais 3 Name</label>
+                                    <input name="name_r3" id="name_r3" value="Relais 3" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="name_r4">Relais 4 Name</label>
+                                    <input name="name_r4" id="name_r4" value="Relais 4" type="text"> 
+                                </div>
+                            </fieldset>
+                            <fieldset>
                                 <legend>WLAN-Konfiguration</legend>
                                 <div class="pure-control-group">
-                                    <label for="ssid">WLAN Netzwerk Name</label> 
+                                    <label class="i500" for="ssid">WLAN Netzwerk Name</label> 
                                     <input name="ssid" id="ssid" value="" type="text"> 
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="pass">Passwort</label>
+                                    <label class="i500" for="pass">Passwort</label>
                                     <input name="passwort" id="pass" value="" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="timeserver">Zeitserver</label>
+                                    <input name="timeserver" id="timeserver" value="time.nist.gov" type="text"> 
+                                </div>
+                                <div class="pure-control-group">
+                                    <label class="i500" for="UpdateServer">Update-Server</label>
+                                    <input name="UpdateServer" id="UpdateServer" value="" type="text"> 
                                 </div>
                             </fieldset>
                             <fieldset>
                                 <legend>HTTP-Authentifizierung</legend>
                                 <div class="pure-control-group">
-                                    <label for="AdminName">Administrator</label>
+                                    <label class="i500" for="AdminName">Administrator</label>
                                     <input name="AdminName" id="AdminName" value="" type="text"> 
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="AdminPasswort">Administratorpasswort</label>
+                                    <label class="i500" for="AdminPasswort">Administratorpasswort</label>
                                     <input name="AdminPasswort" id="AdminPasswort" value="" type="text"> 
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="UserName">Benutzer</label>
+                                    <label class="i500" for="UserName">Benutzer</label>
                                     <input name="UserName" id="UserName" value="" type="text"> 
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="UserPasswort">Benutzerpasswort</label>
+                                    <label class="i500" for="UserPasswort">Benutzerpasswort</label>
                                     <input name="UserPasswort" id="UserPasswort" value="" type="text"> 
-                                </div>
-                                <div class="pure-control-group">
-                                    <label for="UpdateServer">Update-Server</label>
-                                    <input name="UpdateServer" id="UpdateServer" value="" type="text"> 
                                 </div>
                             </fieldset>
                             <fieldset>
                                 <legend>Voreinstellung der Relais</legend>
                                 <div class="pure-control-group">
-                                    <label for="setup4">Verhalten nach Stromausfall</label>
-                                    <input name="setup4" id="setup4" value="" pattern="^[0-2]$" size="1" type="text"> 
-                                    <input name="setup5" id="setup5" value="" pattern="^[0-2]$" size="1" type="text"> 
-                                    <input name="setup6" id="setup6" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                    <label class="i500" for="setup4">Verhalten nach Stromausfall</label>
+                                    <div class="nowrap">
+                                    <input name="setup4" id="setup4" value="" pattern="^[0-2]$" size="1" type="text">&nbsp;
+                                    <input name="setup5" id="setup5" value="" pattern="^[0-2]$" size="1" type="text">&nbsp;
+                                    <input name="setup6" id="setup6" value="" pattern="^[0-2]$" size="1" type="text">&nbsp;
                                     <input name="setup7" id="setup7" value="" pattern="^[0-2]$" size="1" type="text"> 
+                                    </div>
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="setup8">Relais ein bei 0 oder 1</label>
-                                    <input name="setup8" id="setup8" value="" pattern="^[0-1]$" size="1" type="text"> 
-                                    <input name="setup9" id="setup9" value="" pattern="^[0-1]$" size="1" type="text"> 
-                                    <input name="setup10" id="setup10" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <label class="i500" for="setup8">Relais ein bei 0 oder 1</label>
+                                    <div class="nowrap">
+                                    <input name="setup8" id="setup8" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
+                                    <input name="setup9" id="setup9" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
+                                    <input name="setup10" id="setup10" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
                                     <input name="setup11" id="setup11" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    </div>
                                 </div>
                                 <div class="pure-control-group">
-                                    <label for="setup12">Umschalter: LED leuchtet bei Strom</label>
-                                    <input name="setup12" id="setup12" value="" pattern="^[0-1]$" size="1" type="text"> 
-                                    <input name="setup13" id="setup13" value="" pattern="^[0-1]$" size="1" type="text"> 
-                                    <input name="setup14" id="setup14" value="" pattern="^[0-1]$" size="1" type="text"> 
-                                    <input name="setup15" id="setup15" value="" pattern="^[0-1]$" size="1" type="text"> 
+                                    <label class="i500" for="setup12">Umschalter: LED leuchtet bei Strom</label>
+                                    <div class="nowrap">
+                                    <input name="setup12" id="setup12" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
+                                    <input name="setup13" id="setup13" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
+                                    <input name="setup14" id="setup14" value="" pattern="^[0-1]$" size="1" type="text">&nbsp;
+                                    <input name="setup15" id="setup15" value="" pattern="^[0-1]$" size="1" type="text">
+                                    </div>
                                 </div>
                             </fieldset>
                             <button name="submit" id="submit_id" value="Senden" type="submit" class="pure-button pure-button-primary">Senden</button>
                         </form>
                     </div>
-                    <div id="page4" class="page hide">
+                    <div id="page4" class="row page hide">
                         <h2>Log-Datei</h2>
                         <a href="/log.txt" class="pure-button"  download>Log herunterladen</a>
                         <a href="/deletelog.php" class="pure-button">Log löschen</a><br/>
                         <code id="logtable" class="white-space-pre"></code>
                     </div>
-                    <div id="page5" class="page hide">
+                    <div id="page5" class="row page hide">
                         <h2>Dateisystem</h2>
                         <form method='POST' action='/upload' enctype='multipart/form-data' onsubmit="filesUpload();return false;">
                             <input type='file' id='uploadfile'>
@@ -169,19 +209,19 @@ and open the template in the editor.
                         <a href="/update.php" class="pure-button">Firmware-Update über Webserver</a>
                         <table align="center" id="filetable"></table>
                     </div>
-                    <div id="page6" class="page hide">
+                    <div id="page6" class="row page hide">
                         <h2>keine Berechtigung</h2>
                         <p>Für die aufgerufene Funktion haben Sie keine Berechtigung. Bitte loggen Sie sich als Administrator ein.</p>
                     </div>
-                    <div id="page7" class="page hide">
+                    <div id="page7" class="row page hide">
                         <h2>Seite nicht gefunden</h2>
                         <p>Die aufgerufene Seite ist nicht vorhanden. Bitte wählen Sie aus dem Menü eine vorhandene Seite.</p>
                     </div>
                 </section>
-                <footer id="footer" class="pure-g">
-                    <div class="pure-u-1-3 linksmitte">ChipID: <span id="ChipID"></span></div>
-                    <div class="pure-u-1-3 linksmitte">Firmware Version: <span id="version"></span></div>
-                    <div class="pure-u-1-3 linksmitte">&reg; Manfred Bielemeier Lizenz:GPL</div>
+                <footer id="footer" class="row pure-g">
+                        <span id="buttonsSmall" class="nowrap">
+                            NTP:<span id="NTPok"></span>&nbsp;RTC:<span id="RTCok"></span>&nbsp;I2C:<span id="IOok">0</span>&nbsp;Display:<span id="DISPLAYok">0</span>
+                        </span>
                 </footer>
                 <div id="notification"></div>
             </div>

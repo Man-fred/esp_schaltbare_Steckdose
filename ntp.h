@@ -1,11 +1,10 @@
 #include "common.h";
-#include <Time.h>
+#include <TimeLib.h>
 #include <WiFiUdp.h>
 #define TIMEZONE 1
 #define SUMMERTIME 1
 
 IPAddress timeServerIP;
-const char* ntpServerName = "time.nist.gov";
 
 const int NTP_PACKET_SIZE = 48;
 byte packetBuffer[ NTP_PACKET_SIZE];
@@ -56,8 +55,10 @@ unsigned long sendNTPpacket(IPAddress& address)
 */
 unsigned long GetNTP(void) {
   unsigned long ntp_time = 0;
+  NTPok = false;
+
   udp.begin(2390);
-  WiFi.hostByName(ntpServerName, timeServerIP);
+  WiFi.hostByName(timeserver, timeServerIP);
   sendNTPpacket(timeServerIP);
   int cb = udp.parsePacket();
   delay(500);
@@ -65,7 +66,7 @@ unsigned long GetNTP(void) {
   while (cb  < NTP_PACKET_SIZE)
   {
     timout1++;
-    if  (timout1 > 10) return 0;                  // 5s Timout
+    if  (timout1 > 20) return 0;                  // 10s Timout
     cb = udp.parsePacket();
     delay(500);
   }

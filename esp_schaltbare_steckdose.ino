@@ -10,8 +10,8 @@
 
 #ifdef IICTEST
 # include <Wire.h>               //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
-# define PIN_SDA D5
-# define PIN_SCK D6
+# define PIN_SDA D2// bisher NodeMCU D5
+# define PIN_SCK D1// bisher NodeMCU D6
 # define IO_I2C_ADDRESS 0x20     
 # define RTC_I2C_ADDRESS 0x68
 # include "Adafruit_MCP23017.h"  //https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
@@ -26,6 +26,7 @@
 # define dRead(pin) mcp.digitalRead(pin)
   byte Taster[4] = {5, 4, 7, 6}; // A4-A7
   byte Relay[4] = {8, 9, 10, 11}; //B1-B4
+  byte LED_IIC[4] = {12, 13, 14, 15}; //B5-B8
 # ifdef USE_LED_BUILTIN
     byte statusLED = LED_BUILTIN; // D4 -> 2 bei Wemos d1 mini, D0 -> 16 bei Nodemcu
 #   define dPinModeLED pinMode(statusLED, OUTPUT);
@@ -33,7 +34,7 @@
 #   define LED_ON LOW
 #   define LED_OFF HIGH
 # else  
-    byte statusLED = 12; // B5
+    byte statusLED = 0; // A1
 #   define dPinModeLED mcp.pinMode(statusLED, OUTPUT);
 #   define dWriteLED(value) mcp.digitalWrite(statusLED, value)
 #   define LED_ON LOW
@@ -119,25 +120,47 @@ void Zeit_Einstellen()
     NTPTime = GetNTP();
   } else {
     NTPTime = 0;
+    NTPok = false;
   }
 
   if (NTPok) {
-    setTime(NTPTime);
+    if(abs(NTPTime - now()) > 5) {
+      Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
+      //LogSchreiben(Temp);
+      Serial.println( Temp );
+      setTime(NTPTime);
+      Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   NTP: Zeit gesetzt";
+      //LogSchreiben(Temp);
+      Serial.println( Temp );
+    }
   }
 # ifdef IICTEST
     if (RTCok) {
       RTCTime = RTC.now().unixtime();
-      if (NTPok && abs(RTCTime - NTPTime) > 5) {
-        RTCSync = NTPTime;
-        //RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
-      } else if (!NTPok) {
-        setTime(RTCTime);
+      if (NTPok) {
+        if(abs(RTCTime - NTPTime) > 5) {
+          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
+          //LogSchreiben(Temp);
+          Serial.println( Temp );
+          RTCSync = NTPTime;
+          RTC.adjust(DateTime(year(NTPTime), month(NTPTime), day(NTPTime), hour(NTPTime), minute(NTPTime), second(NTPTime)));
+          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   RTC: Zeit von NTP geholt";
+          //LogSchreiben(Temp);
+          Serial.println( Temp );
+        }
+      } else {
+        if(abs(RTCTime - now()) > 5) {
+          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   falsche Zeit";
+          //LogSchreiben(Temp);
+          Serial.println( Temp );
+          setTime(RTCTime);
+          Temp = PrintDate(now()) + "   " + PrintTime (now()) + "   RTC: Zeit gesetzt";
+          //LogSchreiben(Temp);
+          Serial.println( Temp );
+        }
       }
     }
 # endif
-
-  Serial.print("Ortszeit nach Sommer- Winterzeitanpassung: ");
-  Serial.println( PrintTime(now()) );
 }
 
 void WlanStation()
@@ -335,12 +358,16 @@ void setup()
     dPinModeInputPullup(Taster[k]);
     dPinModeOutput(Relay[k]);
     dWrite(Relay[k], val[8+k]);
+#   ifdef IICTEST
+      dPinModeOutput(LED_IIC[k]);
+      dWrite(LED_IIC[k], 0);
+#   endif
   }
   dPinModeLED;
   char inser;               // Serielle daten ablegen
   String nachricht = "";    //  Setup Formular
 
-  EEPROM.begin(250);                                 // EEPROM initialisieren mit 200 Byts
+  EEPROM.begin(512);                                 // EEPROM initialisieren mit 200 Byts
   if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
 
   while (Serial.available())
@@ -412,6 +439,28 @@ void getEeprom() {
   LeseEeprom(UserPasswort, LOGINLAENGE);
   LeseEeprom(UserName, LOGINLAENGE);
   LeseEeprom(UpdateServer, LOGINLAENGE);
+  LeseEeprom(timeserver, LOGINLAENGE);
+  LeseEeprom(name_timer, LOGINLAENGE);
+  LeseEeprom(name_r[0], LOGINLAENGE);
+  LeseEeprom(name_r[1], LOGINLAENGE);
+  LeseEeprom(name_r[2], LOGINLAENGE);
+  LeseEeprom(name_r[3], LOGINLAENGE);
+  if (LeseEepromCheck() != 0x55)
+  {
+    ssid[0] = 0;
+    passwort[0] = 0;
+    AdminPasswort[0] = 0;
+    strcpy(AdminName, "admin");
+    UserPasswort[0] = 0;
+    strcpy(UserName[0], "user");
+    UpdateServer[0] = 0;
+    strcpy(timeserver, "time.nist.gov");
+    strcpy(name_timer, "Wifi 4-fach Timer");
+    name_r[0][0] = 0;
+    name_r[1][0] = 0;
+    name_r[2][0] = 0;
+    name_r[3][0] = 0;
+  }
   //LeseEepromStr(&nachricht,100);
   /*
     Serial.println(ssid);
@@ -497,6 +546,7 @@ byte newCookie(int level) {
 
 //Check if header is present and correct
 byte is_authentified() {
+  //AdminPasswort[0] = 0;
   //Serial.println(server.client().remoteIP().toString()+":"+String(server.client().remotePort()) );
   if (server.hasHeader("Cookie")) {
     //Serial.print("Authentification cookie: ");
@@ -561,6 +611,10 @@ void Relais_Schalten(int datensatz, byte ein, String logtext)
   Temp += "     ";
   Temp += logtext;
   dWrite(Relay[datensatz], val[datensatz + 8] ^ !val[datensatz + 12] ^ val[datensatz]);
+# ifdef IICTEST
+    dWrite(LED_IIC[datensatz], val[datensatz]);
+# endif
+
   Serial.println(Temp);
   LogSchreiben(Temp);
 
@@ -595,7 +649,7 @@ void Ereignis_Zustand()
     Antwort += ";" + String(esp.getChipId()) + ";";
     Antwort += (UserStatus[nr] == COOKIE_ADMINISTRATOR ? "Administrator" : "Eingeschränkt");
     Antwort += ";" + String(NTPok) + ";" + String(RTCok) + ";" + String(IOok) + ";" + String(DISPLAYok);
-
+    Antwort += ";" + String(name_timer) + ";" + String(name_r[0]) + ";" + String(name_r[1]) + ";" + String(name_r[2]) + ";" + String(name_r[3]);
     server.sendHeader("Cache-Control", "no-cache");
     server.send(200, "text/plain", Antwort); // Antwort an Internet Browser senden
   }
@@ -643,6 +697,12 @@ void ConfigJson()      // Wird ausgeuehrt wenn "http://<ip address>/" aufgerufen
     temp +=  "\"pass2\":\"" + String(AdminPasswort) + "\",";
     temp +=  "\"name3\":\"" + String(UserName) + "\",";
     temp +=  "\"pass3\":\"" + String(UserPasswort) + "\",";
+    temp +=  "\"timeserver\":\"" + String(timeserver) + "\",";
+    temp +=  "\"name_timer\":\"" + String(name_timer) + "\",";
+    temp +=  "\"name_r1\":\"" + String(name_r[0]) + "\",";
+    temp +=  "\"name_r2\":\"" + String(name_r[1]) + "\",";
+    temp +=  "\"name_r3\":\"" + String(name_r[2]) + "\",";
+    temp +=  "\"name_r4\":\"" + String(name_r[3]) + "\",";
     temp +=  "\"update\":\"" + String(UpdateServer) + "\"";
     for (int k = 4; k < 32; k++) {
       temp +=  ",\"setup" + String(k) + "\":" + String(val[k]);
@@ -681,9 +741,22 @@ void ConfigSave()      // Wird ausgeuehrt wenn "http://<ip address>/setup.php"
     server.arg("UserName").toCharArray(UserName, server.arg("UserName").length() + 1) ;
     server.arg("UserPasswort").toCharArray(UserPasswort, server.arg("UserPasswort").length() + 1) ;
     server.arg("UpdateServer").toCharArray(UpdateServer, server.arg("UpdateServer").length() + 1) ;
+    server.arg("timeserver").toCharArray(timeserver, server.arg("timeserver").length() + 1) ;
+    server.arg("name_timer").toCharArray(name_timer, server.arg("name_timer").length() + 1) ;
+    server.arg("name_r1").toCharArray(name_r[0], server.arg("name_r1").length() + 1) ;
+    server.arg("name_r2").toCharArray(name_r[1], server.arg("name_r2").length() + 1) ;
+    server.arg("name_r3").toCharArray(name_r[2], server.arg("name_r3").length() + 1) ;
+    server.arg("name_r4").toCharArray(name_r[3], server.arg("name_r4").length() + 1) ;
     SchreibeEeprom(UserPasswort);
     SchreibeEeprom(UserName);
     SchreibeEeprom(UpdateServer);
+    SchreibeEeprom(timeserver);
+    SchreibeEeprom(name_timer);
+    SchreibeEeprom(name_r[0]);
+    SchreibeEeprom(name_r[1]);
+    SchreibeEeprom(name_r[2]);
+    SchreibeEeprom(name_r[3]);
+    SchreibeEepromCheck();
     EEPROM.commit();
 
     ConfigRoute();

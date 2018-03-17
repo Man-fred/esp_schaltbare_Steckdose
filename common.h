@@ -4,7 +4,7 @@
 // ********** Globale Einstellungen zum Layout und zur Version **************
 #define IICTEST
 #define USE_LED_BUILTIN
-String mVersionNr = "V00-04-01.";
+String mVersionNr = "V01-00-00.";
 // ********** Ende der Einstellungen ****************************************
 
 #define DEBUG_OUTPUT Serial
@@ -44,13 +44,14 @@ ESP8266WebServer server;
 const char * headerKeys[] = {"User-Agent","Set-Cookie","Cookie","Date","Content-Type","Connection"} ;
 size_t headerKeysCount = 6;
 
-//const char sketchVersion[5] = "0.3\0";
+char name_timer[LOGINLAENGE] = "Wifi 4-fach Timer";
+char name_r[4][LOGINLAENGE]; 
 char AdminName[LOGINLAENGE] = "admin\0";
 char AdminPasswort[LOGINLAENGE] = "\0";
 char UserName[LOGINLAENGE] = "user\0";
 char UserPasswort[LOGINLAENGE] = "\0";
 char UpdateServer[LOGINLAENGE] = "192.168.178.60\0";
-char ZeitServer[LOGINLAENGE] = "192.168.178.1\0";
+char timeserver[LOGINLAENGE] = "time.nist.gov\0";
 int  UserCookie[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserStatus[COOKIE_MAX];// = [0,0,0,0,0,0,0,0,0,0];
 int  UserNext=0;
