@@ -100,7 +100,8 @@ String Temp = "";
 // nach 5 Versuchen für 24 Std aufgeben
 int timeout = 0; //
 byte statusLEDsek = 0;
-
+int init1 = 0;
+int init2 = 0;
 /*  Status-Flags:
     normale Funktion:  !AP, WLANok, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
     in Setup
@@ -333,7 +334,7 @@ void setup()
   Serial.begin(115200);
   Serial.println("Setup()");
   
-  Serial.setDebugOutput(true);
+  Serial.setDebugOutput(false);
 # ifdef IICTEST
     Wire.begin(PIN_SDA, PIN_SCK);
     testIIC();
@@ -354,10 +355,10 @@ void setup()
 #   endif
   }
   dPinModeLED;
-  char inser;               // Serielle daten ablegen
-  String nachricht = "";    //  Setup Formular
+  char inser;               // Serielle Daten ablegen
+  String nachricht = "";    // Setup Formular
 
-  EEPROM.begin(512);                                 // EEPROM initialisieren mit 200 Byts
+  EEPROM.begin(512);                                 // EEPROM initialisieren mit 512 Byts
   if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
 
   while (Serial.available())
@@ -435,10 +436,12 @@ void getEeprom() {
   LeseEeprom(name_r[1], LOGINLAENGE);
   LeseEeprom(name_r[2], LOGINLAENGE);
   LeseEeprom(name_r[3], LOGINLAENGE);
-  if (LeseEepromCheck() != 0x55)
-  {
-    ssid[0] = 0;
-    passwort[0] = 0;
+
+  if (!LeseEepromCheck())
+  { // Lese-Fehler, alles initialisieren außer ssid / passwort, 
+    // da sonst der Zugang zum eventuell laufenden System zerstört wird 
+    // ssid[0] = 0;
+    // passwort[0] = 0;
     AdminPasswort[0] = 0;
     strcpy(AdminName, "admin");
     UserPasswort[0] = 0;
@@ -451,14 +454,6 @@ void getEeprom() {
     name_r[2][0] = 0;
     name_r[3][0] = 0;
   }
-  //LeseEepromStr(&nachricht,100);
-  /*
-    Serial.println(ssid);
-    Serial.println(passwort);
-    Serial.println(url);
-    Serial.println(nachricht);
-  */
-
 }
 
 void httpStart() {
@@ -768,6 +763,15 @@ void statusLedBlink(byte an, byte aus) {
 void loop()
 {
   if (inSetup) {
+    if (!dRead(Taster[0]) ) {
+      init1 = 1;
+    }
+    if (!dRead(Taster[1]) ) {
+      init1 = 1;
+    }
+    if(init1 && init2) {
+      Einstellen();
+    }
     if (now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
     {
       ZeitTemp = now();

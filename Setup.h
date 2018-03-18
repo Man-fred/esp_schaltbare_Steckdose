@@ -76,19 +76,21 @@ void SchreibeEeprom (String k)
   EEPROM.write(z, '\0');
   z++;
 }
+
+// 0x55 zufällig gewählt, synchron gesetzt in SchreibeEepromCheck() und LeseEepromCheck()
 void SchreibeEepromCheck ()
 {
   EEPROM.write(z, 0x55);
-  Serial.print('Sreibe EEPROM-Pos ');
+  Serial.print('Schreibe EEPROM-Pos ');
   Serial.println(z);
 }
-int LeseEepromCheck ()
+bool LeseEepromCheck ()
 {
   int check = 0;
   check = EEPROM.read(z);
   Serial.print('Lese EEPROM-Pos ');
   Serial.println(z);
-  return check;
+  return (check == 0x55);
 }
 
 

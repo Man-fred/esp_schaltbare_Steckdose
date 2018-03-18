@@ -9,7 +9,7 @@ $db = array(
     "ino.d1_mini" => "V01-04-04.ino.d1_mini.bin",
 // Relais-Webschalter mit IIC
     "iic.nodemcu" => "V00-04-02.iic.nodemcu.bin",
-    "iic.d1_mini" => "V01-00-02.iic.d1_mini.bin",
+    "iic.d1_mini" => "V01-00-03.iic.d1_mini.bin",
 // Relais-Webschalter ohne IIC, minimale Hardwarenutzung
     "min.nodemcu" => "V00-04-02.min.nodemcu.bin",
     "min.d1_mini" => "V00-04-02.min.d1_mini.bin",
