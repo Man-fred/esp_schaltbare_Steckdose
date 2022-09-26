@@ -379,6 +379,8 @@ function indexArt(a) {
             return 9;
         case "11":
             return 10;
+        case "12":
+            return 11;
         default:
             return -1;
     }

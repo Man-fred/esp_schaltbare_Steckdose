@@ -1,4 +1,4 @@
-#include "common.h";
+#include "zcommon.h"
 
 #define TIMER_MAX 50
 extern byte is_authentified();
@@ -267,11 +267,11 @@ void Ereignis_DeleteTimer()
   }
 }
 
-void Timer_pruefen(unsigned long* Zeit)
+void Timer_pruefen()
 {
   for (i = 0; i < 50; i++)        // alle timer-einträge durchgehen
   {
-    if (timer[i].art && timer[i].naechster < now() && timer[i].letzter < timer[i].naechster)
+    if (timer[i].art && timer[i].naechster < (unsigned long)now() && timer[i].letzter < timer[i].naechster)
     { // aktiv, noch nicht durchgeführt
       if (timer[i].aktiv)
         Relais_Schalten(timer[i].relais - 1, timer[i].ein, "Timer "+String(i));
@@ -327,4 +327,3 @@ void Ereignis_NeueTimer()
     Route_Timers_Zeigen();
   }
 }
-

@@ -1,11 +1,17 @@
 #include <ESP8266WiFi.h>
 #include <EEPROM.h>
 #include <FS.h>
-#include "common.h";
+#define USE_LittleFS
+#ifdef USE_LittleFS
+  #define SPIFFS LittleFS
+  #include <LittleFS.h> 
+#endif
+#include "zcommon.h"
 
-#include "fs.h";
+#include "fs.h"
 #include "log.h"
 #include "ntp.h"
+
 
 #ifdef IICTEST
 # include <Wire.h>               //http://arduino.cc/en/Reference/Wire (included with Arduino IDE)
@@ -17,7 +23,7 @@
   Adafruit_MCP23017 mcp;
 # include "RTClib.h"             //https://github.com/adafruit/RTClib
   RTC_DS3231 RTC;
-# include "oled.h";
+# include "oled.h"
 # define dPinModeOutput(pin) mcp.pinMode(pin, OUTPUT);
 # define dPinModeInput(pin) mcp.pinMode(pin, INPUT);
 # define dPinModeInputPullup(pin) mcp.pinMode(pin, INPUT); mcp.pullUp(pin, HIGH);  // turn on a 100K pullup internally
@@ -82,7 +88,7 @@ char passwort[64] = "\0";
 
 EspClass esp;
 int z = 0;                   //Aktuelle EEPROM-Adresse zum lesen
-#include "Setup.h"
+#include "setup.h"
 
 int i = 0;
 // int active_low = 1;          //
@@ -265,7 +271,7 @@ void readInput() {
   char inser = Serial.read();
   if (inser == 'e' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[1]))) {
     Einstellen();
-  } else if (false && inser == 'f' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[2]))) {
+  } else if (inser == 'f' || (inSetup && !digitalRead(Taster[0]) && !digitalRead(Taster[2]))) {
     Serial.println("Please wait 30 secs for SPIFFS to be formatted");
     SPIFFS.format();
     Serial.println("Spiffs formatted");
@@ -355,14 +361,14 @@ void setup()
 #   endif
   }
   dPinModeLED;
-  char inser;               // Serielle Daten ablegen
+  //char inser;               // Serielle Daten ablegen
   String nachricht = "";    // Setup Formular
 
   EEPROM.begin(512);                                 // EEPROM initialisieren mit 512 Byts
   if (!SPIFFS.begin()) Serial.println("Failed to mount file system");
 
   while (Serial.available())
-    inser = Serial.read();
+    Serial.read(); // leeren // inser = Serial.read();
   Serial.println("Start mit Pause,");
   Serial.println("Einstellen: e+<Enter>,");
   Serial.println("Format SPIFFS: f+<Enter>,");
@@ -647,7 +653,7 @@ void Ereignis_log()    //
     File DataFile = SPIFFS.open("/log.txt", "r");
     if (!DataFile)Serial.println("Failed to open log.txt");
     server.sendHeader("Cache-Control", "no-cache");
-    size_t sent = server.streamFile(DataFile, "text/plain");
+    server.streamFile(DataFile, "text/plain"); // size_t sent = 
     DataFile.close();
   }
 }
@@ -669,7 +675,6 @@ void Ereignis_DeleteLog()
 void ConfigJson()      // Wird ausgeuehrt wenn "http://<ip address>/" aufgerufen wurde
 {
   if (is_authentified()) {
-    int i;
     if (ssid[0] == 255) ssid[0] = 0;            // Wenn speicher leer alles auf 0
     if (passwort[0] == 255) passwort[0] = 0;
     if (AdminPasswort[0] == 255) AdminPasswort[0] = 0;
@@ -772,12 +777,11 @@ void loop()
     if(init1 && init2) {
       Einstellen();
     }
-    if (now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
+    if ((unsigned long)now() != ZeitTemp)       // Ausführung 1 mal in der Sekunde
     {
-      ZeitTemp = now();
+      ZeitTemp = (unsigned long)now();
       if (timeout++ > 2)
         setup2();
-      Serial.print(".");
     }
   } else {
     for (int k = 0; k < 4; k++) {
@@ -797,11 +801,13 @@ void loop()
         }
       }
     }
-    time_t jetzt = now();
-
+    unsigned long jetzt = (unsigned long)now();
+    yield();
     if (jetzt != ZeitTemp) {       // Ausführung 1 mal je Sekunde
 #     ifdef IICTEST
-        oledStatus();
+        if (DISPLAYok) {
+          oledStatus();
+        }
 #     endif
       if ( (NTPTime + 86400) < jetzt || (NTPTime == 0 && !RTCok)) { //Zeit Update alle 24Stunden oder wenn gar keine Uhrzeit vorhanden ist
         WlanStation();
@@ -836,18 +842,16 @@ void loop()
         //  normale Funktion "Station":  !AP, WLANok, !inSetup, NTPTime -> ruhig Blinken 5 / 5 sek
         statusLedBlink(5, 5);
       }
+      yield();
       // Timer auch wenn offline, aber nur wenn gueltige Zeit
       if (NTPTime || RTCok) {
-        Timer_pruefen(&ZeitTemp);
+        Timer_pruefen();
       }
     }
 
+    yield();
     if (AP) dnsServer.processNextRequest();
     server.handleClient();              // Server Ereignisse abarbeiten
   }
   readInput();
 }
-
-
-
-

@@ -1,7 +1,7 @@
 #ifndef LOG_INO_H
 #define LOG_INO_H
 
-#include "common.h";
+#include "zcommon.h"
 #include "ntp.h"
 
 
@@ -49,5 +49,3 @@ boolean LogSchreibenNow(String Daten) {
 }
 
 #endif
-
-

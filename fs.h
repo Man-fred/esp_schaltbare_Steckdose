@@ -1,7 +1,7 @@
 #ifndef FS_INO_H
 #define FS_INO_H
 
-#include "common.h";
+#include "zcommon.h"
 #include "log.h"
 
 File fsUploadFile;
@@ -33,7 +33,7 @@ bool handleFileRead(String path) {
     if (SPIFFS.exists(pathWithGz))
       path += ".gz";
     File file = SPIFFS.open(path, "r");
-    size_t sent = server.streamFile(file, contentType);
+    server.streamFile(file, contentType); // size_t sent = 
     file.close();
     return true;
   }
@@ -174,4 +174,3 @@ void updateVersion() {
   }
 }
 #endif
-

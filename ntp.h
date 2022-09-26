@@ -1,7 +1,7 @@
 #ifndef NTP_H
 #define NTP_H
 
-#include "common.h";
+#include "zcommon.h"
 #include <TimeLib.h>
 #include <WiFiUdp.h>
 #define TIMEZONE 1
@@ -22,14 +22,15 @@ boolean summertime(int year, byte month, byte day, byte hour, byte tzHours)
 {
   if (month < 3 || month > 10) return false; // keine Sommerzeit in Jan, Feb, Nov, Dez
   if (month > 3 && month < 10) return true; // Sommerzeit in Apr, Mai, Jun, Jul, Aug, Sep
-  if (month == 3 && (hour + 24 * day) >= (1 + tzHours + 24 * (31 - (5 * year / 4 + 4) % 7)) || month == 10 && (hour + 24 * day) < (1 + tzHours + 24 * (31 - (5 * year / 4 + 1) % 7)))
+  if ((month == 3 && ((hour + 24 * day) >= (1 + tzHours + 24 * (31 - (5 * year / 4 + 4) % 7)))) || (month == 10 && ((hour + 24 * day) < (1 + tzHours + 24 * (31 - (5 * year / 4 + 1) % 7)))))
     return true;
   else
     return false;
 }
 
 // send an NTP request to the time server at the given address
-unsigned long sendNTPpacket(IPAddress& address)
+//unsigned long sendNTPpacket(IPAddress& address)
+void sendNTPpacket(IPAddress& address)
 {
   Serial.println("sending NTP packet...");
   // set all bytes in the buffer to 0
@@ -172,17 +173,18 @@ boolean sommerzeitTest() {
   return false;
 }
 
-boolean feiertag(time_t test)
+boolean feiertag(unsigned long test)
 {
   String testDate;
-  int tag;
-  int monat = 3;
+  int tag = 0;
+  //int monat = 3;
   int ostersonntag;
 
   testDate = String(day(test)) + "." + String(month(test));
 
   // Zuerst die festen Feiertage
   // Hinweis: 24.12 und 31.12 sind eigentlich keine Feiertage, werden aber hier als solche behandelt
+  return false;
   if (testDate == ("1.1")) {
     return true; // Neujahr
   }
@@ -191,6 +193,9 @@ boolean feiertag(time_t test)
   }
   if (testDate == ("3.10")) {
     return true; // Tag d. dt. Einheit
+  }
+  if (testDate == ("31.10")) {
+    return true; // year() == 2017; // Reformationstag (mittlerweile immer)
   }
   if (testDate == ("24.12")) {
     return true; // Heiligabend (eigentlich kein Feiertag)
@@ -205,15 +210,13 @@ boolean feiertag(time_t test)
     return true; // Silvester (eigentlich kein Feiertag)
   }
 
+  /*if (testDate == ("21.6")) {
+    return true; // TEST!!, immer falsch!
+  }*/
   // Nachfolgend einige Feiertage die nicht bundeseinheitlich sind: (ggf. auskommentieren)
   // if (testDate==("6.1")) {return true;}   // Heilige Drei Könige (nur in best. Bundesländern)
   // if (testDate==("15.8")) {return true;}  // Mariae Himmelfahrt (nur im Saarland)
-  if (testDate == ("31.10")) {
-    return year() == 2017; // Reformationstag (nur in best. Bundesländern) und in 2017
-  }
   // if (testDate==("1.11")) {return true;}  // Allerheiligen (nur in best. Bundesländern)
-
-
 
   if (month() == 3) {
     tag = day(); // Wenn März, aktuellen Tag ermitteln
@@ -247,11 +250,13 @@ boolean feiertag(time_t test)
   if (ostersonntag + 50 == tag)  {
     return true; // Pfingstmontag
   }
+  /*
   if (ostersonntag + 60 == tag)  {
     return true; // Fronleichnam (nicht bundeseinheitlich)
   }
+  */
 
-  // Buss- und Bettag gibt es nur in eingen Bundeländern, also ggf. auskommentieren
+  // Buß- und Bettag gibt es nur in eingen Bundeländern, also ggf. auskommentieren
   // if (buss_und_bettag()) {return true;}
 
   return false;

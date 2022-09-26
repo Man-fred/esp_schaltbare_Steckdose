@@ -1,12 +1,11 @@
 String Mitteilung = "";
 
-
 unsigned int hexToDec(String hexString) {
 
   unsigned int decValue = 0;
   int nextInt;
 
-  for (int i = 0; i < hexString.length(); i++) {
+  for (unsigned int i = 0; i < hexString.length(); i++) {
 
     nextInt = int(hexString.charAt(i));
     if (nextInt >= 48 && nextInt <= 57) nextInt = map(nextInt, 48, 57, 0, 9);
@@ -52,7 +51,7 @@ void SchreibeEeprom (String k)
 {
   int i = 0, blja = 64;
   int  pos, wert;
-  char Buchstabe;
+  //char Buchstabe;
   String HexZahl, ersatz = "f";
   k.replace("+", " ");
 
@@ -81,19 +80,14 @@ void SchreibeEeprom (String k)
 void SchreibeEepromCheck ()
 {
   EEPROM.write(z, 0x55);
-  Serial.print('Schreibe EEPROM-Pos ');
+  Serial.print("Schreibe EEPROM-Pos ");
   Serial.println(z);
 }
 bool LeseEepromCheck ()
 {
   int check = 0;
   check = EEPROM.read(z);
-  Serial.print('Lese EEPROM-Pos ');
+  Serial.print("Lese EEPROM-Pos ");
   Serial.println(z);
   return (check == 0x55);
 }
-
-
-
-
-

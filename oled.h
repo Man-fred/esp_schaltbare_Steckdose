@@ -3,7 +3,7 @@
 # include <Adafruit_GFX.h>
 # include <Adafruit_SSD1306.h>
 
-#include "common.h"
+#include "zcommon.h"
 # define DISPLAY_I2C_ADDRESS 0x3C 
 # define OLED_RESET 4
 
