@@ -35,8 +35,8 @@ void sendNTPpacket(IPAddress& address)
   Serial.println("sending NTP packet...");
   // set all bytes in the buffer to 0
   memset(packetBuffer, 0, NTP_PACKET_SIZE);
-  // Initialize values needed to form NTP request
-  // (see URL above for details on the packets)
+  // Initialize values needed to form NTP request https://www.rfc-editor.org/rfc/rfc5905#page-16
+  // see URL for details on the packets https://www.meinberg.de/german/info/ntp-packet.htm
   packetBuffer[0] = 0b11100011;   // LI, Version, Mode
   packetBuffer[1] = 0;     // Stratum, or type of clock
   packetBuffer[2] = 6;     // Polling Interval
@@ -177,14 +177,13 @@ boolean feiertag(unsigned long test)
 {
   String testDate;
   int tag = 0;
-  //int monat = 3;
   int ostersonntag;
 
   testDate = String(day(test)) + "." + String(month(test));
 
   // Zuerst die festen Feiertage
   // Hinweis: 24.12 und 31.12 sind eigentlich keine Feiertage, werden aber hier als solche behandelt
-  return false;
+  // return false;
   if (testDate == ("1.1")) {
     return true; // Neujahr
   }

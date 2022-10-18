@@ -195,7 +195,7 @@ void TimerNaechster(int i, bool neustart = false)
         }
         Serial.print("Nächster we ");
       }
-      // Werktag Timer
+      // Mo-Fr Timer
       if  (timer[i].art == 11) { 
         while (timer[i].naechster < Jetzt || 
                   weekday(timer[i].naechster) == 7 || 
@@ -205,7 +205,8 @@ void TimerNaechster(int i, bool neustart = false)
         }
         Serial.print("Nächster wt ");
       }
-      if  (timer[i].art == 12) { // Feiertage Timer
+      // Feiertage Timer
+      if  (timer[i].art == 12) { 
         while (timer[i].naechster < Jetzt || !feiertag(timer[i].naechster)) {
           // nächsten Feiertag suchen
           timer[i].naechster += 86400L;
