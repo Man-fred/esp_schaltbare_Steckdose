@@ -19,14 +19,14 @@
 # define PIN_SCK D1// bisher NodeMCU D6
 # define IO_I2C_ADDRESS 0x20     
 # define RTC_I2C_ADDRESS 0x68
-# include "Adafruit_MCP23017.h"  //https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
-  Adafruit_MCP23017 mcp;
+# include "Adafruit_MCP23X17.h"  //https://github.com/adafruit/Adafruit-MCP23017-Arduino-Library http://ww1.microchip.com/downloads/en/DeviceDoc/20001952C.pdf
+  Adafruit_MCP23X17 mcp;
 # include "RTClib.h"             //https://github.com/adafruit/RTClib
   RTC_DS3231 RTC;
 # include "oled.h"
 # define dPinModeOutput(pin) mcp.pinMode(pin, OUTPUT);
 # define dPinModeInput(pin) mcp.pinMode(pin, INPUT);
-# define dPinModeInputPullup(pin) mcp.pinMode(pin, INPUT); mcp.pullUp(pin, HIGH);  // turn on a 100K pullup internally
+# define dPinModeInputPullup(pin) mcp.pinMode(pin, INPUT_PULLUP);  // turn on a 100K pullup internally
 # define dWrite(pin, value) mcp.digitalWrite(pin, value)
 # define dRead(pin) mcp.digitalRead(pin)
   byte Taster[4] = {5, 4, 7, 6}; // A4-A7
@@ -345,7 +345,7 @@ void setup()
     Wire.begin(PIN_SDA, PIN_SCK);
     testIIC();
     if (IOok) {
-      mcp.begin(0);
+      mcp.begin_I2C();
     }
     if (DISPLAYok) {
       oledSplash();
