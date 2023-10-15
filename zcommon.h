@@ -2,9 +2,9 @@
 #define COMMON_H
 
 // ********** Globale Einstellungen zum Layout und zur Version **************
-// #define IICTEST
+#define IICTEST
 #define USE_LED_BUILTIN
-String mVersionNr = "V01-01-00.";
+String mVersionNr = "V01-01-01.";
 // ********** Ende der Einstellungen ****************************************
 
 #include <TimeLib.h>             //<Time.h> http://www.arduino.cc/playground/Code/Time

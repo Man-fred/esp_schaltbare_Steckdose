@@ -142,7 +142,7 @@ void Zeit_Einstellen()
     if (RTCok) {
       RTCTime = RTC.now().unixtime();
       if (NTPok) {
-        if(abs(RTCTime - NTPTime) > 5) {
+        if(abs((long)(RTCTime - NTPTime)) > 5) {
           Temp = PrintDate(RTCTime) + "   " + PrintTime(RTCTime) + "   falsche RTC-Zeit";
           LogSchreiben(Temp);
           //Serial.println( Temp );

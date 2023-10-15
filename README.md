@@ -6,7 +6,7 @@ Der Schaltplan bezieht sich noch auf die Hardwareversion "min".
 
 ## Umgebung
 ### Software
-Arduino 1.8.2 mit zusätzlicher Boardverwalter-URL http://arduino.esp8266.com/stable/package_esp8266com_index.json .
+Arduino 2.1.1 mit zusätzlicher Boardverwalter-URL http://arduino.esp8266.com/stable/package_esp8266com_index.json .
 
 Die externen Libraries 
 
